@@ -43,12 +43,14 @@ func main() {
 	if errptr != nil && cl.ErrorCode(*errptr) != cl.SUCCESS {
 		log.Fatal("couldnt create context")
 	}
+	defer cl.ReleaseContext(context)
 
 	//Create Command Queue
 	cq := cl.CreateCommandQueue(*context, device, 0, errptr)
 	if errptr != nil && cl.ErrorCode(*errptr) != cl.SUCCESS {
 		log.Fatal("couldnt create command queue")
 	}
+	defer cl.ReleaseCommandQueue(cq)
 
 	//Create program
 	srcptr := cl.Str(KernelSource)
@@ -56,6 +58,7 @@ func main() {
 	if errptr != nil && cl.ErrorCode(*errptr) != cl.SUCCESS {
 		log.Fatal("couldnt create program")
 	}
+	defer cl.ReleaseProgram(program)
 
 	err = cl.BuildProgram(program, 1, &device, nil, nil, nil)
 	if err != cl.SUCCESS {
@@ -72,17 +75,20 @@ func main() {
 	if errptr != nil && cl.ErrorCode(*errptr) != cl.SUCCESS {
 		log.Fatal("couldnt create compute kernel")
 	}
+	defer cl.ReleaseKernel(kernel)
 
 	//Create buffers
 	input := cl.CreateBuffer(*context, cl.MEM_READ_ONLY, 4*DATA_SIZE, nil, errptr)
 	if errptr != nil && cl.ErrorCode(*errptr) != cl.SUCCESS {
 		log.Fatal("couldnt create input buffer")
 	}
+	defer cl.ReleaseMemObject(input)
 
 	output := cl.CreateBuffer(*context, cl.MEM_WRITE_ONLY, 4*DATA_SIZE, nil, errptr)
 	if errptr != nil && cl.ErrorCode(*errptr) != cl.SUCCESS {
 		log.Fatal("couldnt create output buffer")
 	}
+	defer cl.ReleaseMemObject(output)
 
 	//Write data
 	err = cl.EnqueueWriteBuffer(cq, input, cl.TRUE, 0, 4*DATA_SIZE, unsafe.Pointer(&data[0]), 0, nil, nil)
@@ -139,5 +145,4 @@ func main() {
 
 	log.Printf("%d/%d success", success, DATA_SIZE)
 	log.Printf("values not zero: %d", notzero)
-
 }
