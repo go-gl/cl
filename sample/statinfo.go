@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/hydroflame/gopencl/v1.2/cl"
+	"github.com/go-gl/cl/v1.2/cl"
 	"log"
 	"unsafe"
 )
