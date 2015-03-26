@@ -11,8 +11,9 @@ package cl
 #endif
 extern void contextErrorCallback(char *, void *, size_t, void *);
 extern void memObjectDestroyCallback(cl_mem,void*);
-extern void programObjectBuildCompleteCallback(cl_program, void*);
+extern void programCallback(cl_program, void*);
 extern void programObjectCompileCompleteCallback(cl_program, void*);
+extern void eventCallback(cl_event,cl_int,void*);
 */
 import "C"
 import (
@@ -21,8 +22,8 @@ import (
 
 func init() {
 	mochHolder = make(map[*memObjectCallbackHolder]struct{})
-	pobchHolder = make(map[*programObjectBuildCompleteHolder]struct{})
-	poccHolder = make(map[*programObjectCompileCompleteHolder]struct{})
+	pochHolder = make(map[*programCallbackHolder]struct{})
+	ecbHolder = make(map[*eventCbHolder]struct{})
 }
 
 type ErrorCode int32
@@ -65,6 +66,7 @@ type EventInfo uint32
 type CommandType uint32
 type BufferCreateType uint32
 type ProfilingInfo uint32
+type CommandExecutionStatus int32
 
 const (
 	SUCCESS                                   ErrorCode = C.CL_SUCCESS
@@ -540,11 +542,11 @@ const (
 	COMMAND_FILL_IMAGE                       = C.CL_COMMAND_FILL_IMAGE
 )
 
-const ( /* command execution status */
-	COMPLETE  = C.CL_COMPLETE
-	RUNNING   = C.CL_RUNNING
-	SUBMITTED = C.CL_SUBMITTED
-	QUEUED    = C.CL_QUEUED
+const (
+	COMPLETE  CommandExecutionStatus = C.CL_COMPLETE
+	RUNNING                          = C.CL_RUNNING
+	SUBMITTED                        = C.CL_SUBMITTED
+	QUEUED                           = C.CL_QUEUED
 )
 
 const (
@@ -860,45 +862,31 @@ func ReleaseProgram(prog Program) ErrorCode {
 	return ErrorCode(C.clReleaseProgram(prog))
 }
 
-type programObjectBuildCompleteHolder struct {
+type programCallbackHolder struct {
 	cbfunc   func(Program, interface{})
 	userdata interface{}
 }
 
-var pobchHolder map[*programObjectBuildCompleteHolder]struct{}
+var pochHolder map[*programCallbackHolder]struct{}
 
-//export programObjectBuildCompleteCallback
-func programObjectBuildCompleteCallback(prog C.cl_program, userdata unsafe.Pointer) {
-	pobch := (*programObjectBuildCompleteHolder)(userdata)
-	pobch.cbfunc(Program(prog), pobch.userdata)
-	delete(pobchHolder, pobch)
+//export programCallback
+func programCallback(prog C.cl_program, userdata unsafe.Pointer) {
+	poch := (*programCallbackHolder)(userdata)
+	poch.cbfunc(Program(prog), poch.userdata)
+	delete(pochHolder, poch)
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clBuildProgram.html
-func BuildProgram(prog Program, numDevices uint32, devices *DeviceId, options *uint8, buildcomplete func(Program, interface{}), userdata interface{}) ErrorCode {
+func BuildProgram(prog Program, numDevices uint32, devices *DeviceId, options *uint8, notify func(Program, interface{}), userdata interface{}) ErrorCode {
 	var f *[0]byte
 	var u unsafe.Pointer
-	if buildcomplete != nil {
-		pobch := programObjectBuildCompleteHolder{buildcomplete, userdata}
-		pobchHolder[&pobch] = struct{}{}
-		f = (*[0]byte)(C.programObjectBuildCompleteCallback)
+	if notify != nil {
+		pobch := programCallbackHolder{notify, userdata}
+		pochHolder[&pobch] = struct{}{}
+		f = (*[0]byte)(C.programCallback)
 		u = unsafe.Pointer(&pobch)
 	}
 	return ErrorCode(C.clBuildProgram(prog, C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.char)(unsafe.Pointer(options)), f, u))
-}
-
-type programObjectCompileCompleteHolder struct {
-	cbfunc   func(Program, interface{})
-	userData interface{}
-}
-
-var poccHolder map[*programObjectCompileCompleteHolder]struct{}
-
-//export programObjectCompileCompleteCallback
-func programObjectCompileCompleteCallback(prog C.cl_program, userData unsafe.Pointer) {
-	pocc := (*programObjectCompileCompleteHolder)(userData)
-	pocc.cbfunc(Program(prog), pocc.userData)
-	delete(poccHolder, pocc)
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clclCompileProgram.html
@@ -906,14 +894,12 @@ func CompileProgram(prog Program, numDevices uint32, devices *DeviceId, options 
 	var f *[0]byte
 	var u unsafe.Pointer
 	if notify != nil {
-		pocc := programObjectCompileCompleteHolder{notify, userData}
-		poccHolder[&pocc] = struct{}{}
-		f = (*[0]byte)(C.programObjectCompileCompleteCallback)
-		u = unsafe.Pointer(&pocc)
+		poch := programCallbackHolder{notify, userData}
+		pochHolder[&poch] = struct{}{}
+		f = (*[0]byte)(C.programCallback)
+		u = unsafe.Pointer(&poch)
 	}
-	return ErrorCode(C.clCompileProgram(prog, C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.char)(unsafe.Pointer(options)), C.cl_uint(numInputHeaders), (*C.cl_program)(unsafe.Pointer(inputHeaders)), (**C.char)(unsafe.Pointer(headerIncludeNames)),
-		f,
-		u))
+	return ErrorCode(C.clCompileProgram(prog, C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.char)(unsafe.Pointer(options)), C.cl_uint(numInputHeaders), (*C.cl_program)(unsafe.Pointer(inputHeaders)), (**C.char)(unsafe.Pointer(headerIncludeNames)), f, u))
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clLinkProgram.html
@@ -921,10 +907,10 @@ func LinkProgram(context Context, numDevices uint32, devices *DeviceId, options 
 	var f *[0]byte
 	var u unsafe.Pointer
 	if notify != nil {
-		pocc := programObjectCompileCompleteHolder{notify, userData}
-		poccHolder[&pocc] = struct{}{}
-		f = (*[0]byte)(C.programObjectCompileCompleteCallback)
-		u = unsafe.Pointer(&pocc)
+		poch := programCallbackHolder{notify, userData}
+		pochHolder[&poch] = struct{}{}
+		f = (*[0]byte)(C.programCallback)
+		u = unsafe.Pointer(&poch)
 	}
 	return Program(C.clLinkProgram(context.clContext, C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.char)(unsafe.Pointer(options)), C.cl_uint(numInputPrograms), (*C.cl_program)(unsafe.Pointer(inputPrograms)), f, u, (*C.cl_int)(unsafe.Pointer(errcode))))
 }
@@ -995,8 +981,8 @@ func GetKernelWorkGroupInfo(ker Kernel, did DeviceId, paramName KernelWorkGroupI
 =================================================================================================================*/
 
 type Event struct {
-	clEvent C.cl_event
-	cbFuncs []func()
+	clEvent   C.cl_event
+	callbacks []*eventCbHolder
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clWaitForEvents.html
@@ -1011,7 +997,7 @@ func GetEventInfo(e Event, paramName uint32, paramValueSize uint64, paramValue u
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateUserEvent.html
 func CreateUserEvent(context Context, errcode *int32) Event {
-	return Event{C.clCreateUserEvent(context.clContext, (*C.cl_int)(unsafe.Pointer(errcode))), make([]func(), 0)}
+	return Event{C.clCreateUserEvent(context.clContext, (*C.cl_int)(unsafe.Pointer(errcode))), make([]*eventCbHolder, 0)}
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clRetainEvent.html
@@ -1029,34 +1015,25 @@ func SetUserEventStatus(e Event, execStatus int32) ErrorCode {
 	return ErrorCode(C.clSetUserEventStatus(e.clEvent, C.cl_int(execStatus)))
 }
 
-/*
 type eventCbHolder struct {
-	cbfunc   func()
+	cbfunc   func(Event, CommandExecutionStatus, interface{})
 	userData interface{}
 }
 
-var ecbhHolder map[*eventCbHolder]struct{}
+var ecbHolder map[*eventCbHolder]struct{}
 
-//exp
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/cleventCallbackCallbackort.html  eventCallbackCallback
-func eventCallbackCallback() {
-
+//export eventCallback
+func eventCallback(event C.cl_event, eventCommandExecStatus C.cl_int, userdata unsafe.Pointer) {
+	ecbh := (*eventCbHolder)(userdata)
+	ecbh.cbfunc(Event{event, nil}, CommandExecutionStatus(eventCommandExecStatus), ecbh.userData)
 }
 
-//I say hey, that doesn't wooooorkkkk!
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clSetEventCallback.html
-func SetEventCallback(e Event, commandExecCallbackType int32, notify func(Event, int32, interface{}), userData interface{}) ErrorCode {
-	return ErrorCode(C.clSetEventCallback(e, C.cl_int(commandExecCallbackType), f))
-}*/
-
-var code = `
-extern CL_API_ENTRY cl_int CL_API_CALL
-clSetEventCallback( cl_event    /* event */,
-                    cl_int      /* command_exec_callback_type */,
-                    void (CL_CALLBACK * /* pfn_notify */)(cl_event, cl_int, void *),
-                    void *      /* user_data */) CL_API_SUFFIX__VERSION_1_1;
-
-`
+func SetEventCallback(e Event, commandExecCallbackType int32, notify func(Event, CommandExecutionStatus, interface{}), userData interface{}) ErrorCode {
+	ecbh := eventCbHolder{notify, userData}
+	e.callbacks = append(e.callbacks, &ecbh)
+	return ErrorCode(C.clSetEventCallback(e.clEvent, C.cl_int(commandExecCallbackType), (*[0]byte)(C.eventCallback), unsafe.Pointer(&ecbh)))
+}
 
 /*=================================================================================================================
 ======================================================Profiling Api=============================================
@@ -1180,12 +1157,10 @@ func EnqueueTask(cq CommandQueue, kernel Kernel, num_events_in_wait_list uint32,
 	return ErrorCode(C.clEnqueueTask(cq, kernel, C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-/*
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueNativeKernel.html
-func EnqueueNativeKernel(cq CommandQueue ,userfunc func(),args unsafe.Pointer,cb_args uint64, num_mem_objects uint32 ,mem_list *Mem , args_mem_loc unsafe.Pointer ,num_events_in_wait_list uint32 ,event_wait_list *Event , event *Event) int32{
-	return ErrorCode(C.clEnqueueNativeKernel(cq,userfunc,unsafe.Pointer(args),C.size_t(cb_args),C.cl_uint(num_mem_objects),(*C.cl_mem)(unsafe.Pointer(mem_list)),args_mem_loc,C.cl_uint(num_events_in_wait_list),(*C.cl_event)(unsafe.Pointer(event_wait_list)),(*C.cl_event)(unsafe.Pointer(event))))
+func EnqueueNativeKernel(cq CommandQueue, userfunc func(unsafe.Pointer), args unsafe.Pointer, cb_args uint64, num_mem_objects uint32, mem_list *Mem, args_mem_loc unsafe.Pointer, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) int32 {
+	panic("clEnqueueNativeKernel is not supported by this binding")
 }
-*/
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueMarkerWithWaitList.html
 func EnqueueMarkerWithWaitList(cq CommandQueue, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
