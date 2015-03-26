@@ -66,7 +66,7 @@ type CommandType uint32
 type BufferCreateType uint32
 type ProfilingInfo uint32
 
-const ( /* Error Codes */
+const (
 	SUCCESS                                   ErrorCode = C.CL_SUCCESS
 	DEVICE_NOT_FOUND                                    = C.CL_DEVICE_NOT_FOUND
 	DEVICE_NOT_AVAILABLE                                = C.CL_DEVICE_NOT_AVAILABLE
@@ -128,7 +128,7 @@ const ( /* Error Codes */
 	INVALID_DEVICE_PARTITION_COUNT                      = C.CL_INVALID_DEVICE_PARTITION_COUNT
 )
 
-const ( /* OpenCL Version */
+const (
 	VERSION_1_0 = C.CL_VERSION_1_0
 	VERSION_1_1 = C.CL_VERSION_1_1
 	VERSION_1_2 = C.CL_VERSION_1_2
@@ -313,7 +313,7 @@ const (
 	MEM_USE_HOST_PTR            = C.CL_MEM_USE_HOST_PTR
 	MEM_ALLOC_HOST_PTR          = C.CL_MEM_ALLOC_HOST_PTR
 	MEM_COPY_HOST_PTR           = C.CL_MEM_COPY_HOST_PTR
-	// reserved                                         (1 << 6)
+
 	MEM_HOST_WRITE_ONLY = C.CL_MEM_HOST_WRITE_ONLY
 	MEM_HOST_READ_ONLY  = C.CL_MEM_HOST_READ_ONLY
 	MEM_HOST_NO_ACCESS  = C.CL_MEM_HOST_NO_ACCESS
@@ -609,58 +609,59 @@ func ReleaseDevice(did DeviceId) ErrorCode {
 ========================================================Context Api================================================
 =================================================================================================================*/
 
-type Context struct {
+type gocontext struct {
 	clContext   C.cl_context
-	errCallback func(string, unsafe.Pointer, uint64, unsafe.Pointer)
+	errCallback func(string, unsafe.Pointer, uint64, interface{})
 	userdata    interface{}
 }
 
+type Context *gocontext
+
 //export contextErrorCallback
 func contextErrorCallback(errinfo *C.char, privateinfo unsafe.Pointer, cb C.size_t, userData unsafe.Pointer) {
-	ctx := (*Context)(userData)
-	_ = ctx
-	//do something
+	ctx := (*gocontext)(userData)
+	ctx.errCallback(C.GoString(errinfo), privateinfo, uint64(cb), ctx.userdata)
 }
 
+//This returns a pointer because its pointer is given to OpenCL, if we returned a value the original data would get cleaned up and the callback would make the application crash
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateContext.html
-func CreateContext(properties *ContextProperties, numDevices uint32, devices *DeviceId, errcb func(string, unsafe.Pointer, uint64, unsafe.Pointer), userdata interface{}, errcode *int32) *Context {
-	ctx := Context{nil, errcb, userdata}
-	ctx.clContext = C.clCreateContext((*C.cl_context_properties)(unsafe.Pointer(properties)),
-		C.cl_uint(numDevices),
-		(*C.cl_device_id)(unsafe.Pointer(devices)),
-		(*[0]byte)(C.contextErrorCallback),
-		unsafe.Pointer(&ctx),
-		(*C.cl_int)(unsafe.Pointer(errcode)))
-	return &ctx
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateContextFromType.html
-func CreateContextFromType(properties *ContextProperties, deviceType DeviceType, errcb func(string, unsafe.Pointer, uint64, unsafe.Pointer), userdata interface{}, errcode *int32) *Context {
-	ctx := Context{nil, errcb, userdata}
+func CreateContext(properties *ContextProperties, numDevices uint32, devices *DeviceId, notify func(string, unsafe.Pointer, uint64, interface{}), userdata interface{}, errcode *int32) Context {
+	ctx := gocontext{nil, notify, userdata}
 	var f *[0]byte
 	var u unsafe.Pointer
-	if errcb != nil {
+	if notify != nil {
 		f = (*[0]byte)(C.contextErrorCallback)
 		u = unsafe.Pointer(&ctx)
 	}
-	ctx.clContext = C.clCreateContextFromType((*C.cl_context_properties)(unsafe.Pointer(properties)),
-		C.cl_device_type(deviceType), f, u,
-		(*C.cl_int)(unsafe.Pointer(errcode)))
-	return &ctx
+	ctx.clContext = C.clCreateContext((*C.cl_context_properties)(unsafe.Pointer(properties)), C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), f, u, (*C.cl_int)(unsafe.Pointer(errcode)))
+	return Context(&ctx)
+}
+
+//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateContextFromType.html
+func CreateContextFromType(properties *ContextProperties, deviceType DeviceType, notify func(string, unsafe.Pointer, uint64, interface{}), userdata interface{}, errcode *int32) Context {
+	ctx := gocontext{nil, notify, userdata}
+	var f *[0]byte
+	var u unsafe.Pointer
+	if notify != nil {
+		f = (*[0]byte)(C.contextErrorCallback)
+		u = unsafe.Pointer(&ctx)
+	}
+	ctx.clContext = C.clCreateContextFromType((*C.cl_context_properties)(unsafe.Pointer(properties)), C.cl_device_type(deviceType), f, u, (*C.cl_int)(unsafe.Pointer(errcode)))
+	return Context(&ctx)
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clRetainContext.html
-func RetainContext(context *Context) ErrorCode {
+func RetainContext(context Context) ErrorCode {
 	return ErrorCode(C.clRetainContext(context.clContext))
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clReleaseContext.html
-func ReleaseContext(context *Context) ErrorCode {
+func ReleaseContext(context Context) ErrorCode {
 	return ErrorCode(C.clReleaseContext(context.clContext))
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetContextInfo.html
-func GetContextInfo(context *Context, paramName ContextInfo, paramValueSize uint64, data unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
+func GetContextInfo(context Context, paramName ContextInfo, paramValueSize uint64, data unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetContextInfo(context.clContext, C.cl_context_info(paramName), C.size_t(paramValueSize), data, (*C.size_t)(paramValueSizeRet)))
 }
 
