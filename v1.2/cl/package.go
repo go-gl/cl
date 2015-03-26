@@ -625,9 +625,8 @@ func contextErrorCallback(errinfo *C.char, privateinfo unsafe.Pointer, cb C.size
 	ctx.errCallback(C.GoString(errinfo), privateinfo, uint64(cb), ctx.userdata)
 }
 
-//This returns a pointer because its pointer is given to OpenCL, if we returned a value the original data would get cleaned up and the callback would make the application crash
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateContext.html
-func CreateContext(properties *ContextProperties, numDevices uint32, devices *DeviceId, notify func(string, unsafe.Pointer, uint64, interface{}), userdata interface{}, errcode *int32) Context {
+func CreateContext(properties *ContextProperties, numDevices uint32, devices *DeviceId, notify func(string, unsafe.Pointer, uint64, interface{}), userdata interface{}, errcode *ErrorCode) Context {
 	ctx := gocontext{nil, notify, userdata}
 	var f *[0]byte
 	var u unsafe.Pointer
@@ -640,7 +639,7 @@ func CreateContext(properties *ContextProperties, numDevices uint32, devices *De
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateContextFromType.html
-func CreateContextFromType(properties *ContextProperties, deviceType DeviceType, notify func(string, unsafe.Pointer, uint64, interface{}), userdata interface{}, errcode *int32) Context {
+func CreateContextFromType(properties *ContextProperties, deviceType DeviceType, notify func(string, unsafe.Pointer, uint64, interface{}), userdata interface{}, errcode *ErrorCode) Context {
 	ctx := gocontext{nil, notify, userdata}
 	var f *[0]byte
 	var u unsafe.Pointer
@@ -674,7 +673,7 @@ func GetContextInfo(context Context, paramName ContextInfo, paramValueSize uint6
 type CommandQueue C.cl_command_queue
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateCommandQueue.html
-func CreateCommandQueue(context Context, did DeviceId, properties CommandQueueProperties, errcode *int32) CommandQueue {
+func CreateCommandQueue(context Context, did DeviceId, properties CommandQueueProperties, errcode *ErrorCode) CommandQueue {
 	return CommandQueue(C.clCreateCommandQueue(context.clContext, did, C.cl_command_queue_properties(properties), (*C.cl_int)(errcode)))
 }
 
@@ -734,17 +733,17 @@ func (imde ImageDesc) toC() *C.cl_image_desc {
 type Mem C.cl_mem
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateBuffer.html
-func CreateBuffer(context Context, flags, paramValueSize MemFlags, hostPtr unsafe.Pointer, errcode *int32) Mem {
+func CreateBuffer(context Context, flags, paramValueSize MemFlags, hostPtr unsafe.Pointer, errcode *ErrorCode) Mem {
 	return Mem(C.clCreateBuffer(context.clContext, C.cl_mem_flags(flags), C.size_t(paramValueSize), hostPtr, (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateSubBuffer.html
-func CreateSubBuffer(mem Mem, flags MemFlags, bufferCreateType BufferCreateType, bufferCreateInfo unsafe.Pointer, errcode *int32) Mem {
+func CreateSubBuffer(mem Mem, flags MemFlags, bufferCreateType BufferCreateType, bufferCreateInfo unsafe.Pointer, errcode *ErrorCode) Mem {
 	return Mem(C.clCreateSubBuffer(mem, C.cl_mem_flags(flags), C.cl_buffer_create_type(bufferCreateType), bufferCreateInfo, (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateImage.html
-func CreateImage(context Context, flags MemFlags, imageFormat ImageFormat, imageDesc ImageDesc, hostPtr unsafe.Pointer, errcode *int32) Mem {
+func CreateImage(context Context, flags MemFlags, imageFormat ImageFormat, imageDesc ImageDesc, hostPtr unsafe.Pointer, errcode *ErrorCode) Mem {
 	return Mem(C.clCreateImage(context.clContext, C.cl_mem_flags(flags), imageFormat.toC(), imageDesc.toC(), hostPtr, (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
@@ -806,7 +805,7 @@ func SetMemObjectDestructorCallback(mem Mem, destroyCb func(Mem, interface{}), u
 type Sampler C.cl_sampler
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateSampler.html
-func CreateSampler(context Context, normalizedCoords Bool, addressingMode AddressingMode, filterMode FilterMode, errcode *int32) Sampler {
+func CreateSampler(context Context, normalizedCoords Bool, addressingMode AddressingMode, filterMode FilterMode, errcode *ErrorCode) Sampler {
 	return Sampler(C.clCreateSampler(context.clContext, C.cl_bool(normalizedCoords), C.cl_addressing_mode(addressingMode), C.cl_filter_mode(filterMode), (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
@@ -832,12 +831,12 @@ func GetSamplerInfo(sampler Sampler, paramName SamplerInfo, paramValueSize uint6
 type Program C.cl_program
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateProgramWithSource.html
-func CreateProgramWithSource(context Context, count uint32, src **uint8, lengths *uint64, errcode *int32) Program {
+func CreateProgramWithSource(context Context, count uint32, src **uint8, lengths *uint64, errcode *ErrorCode) Program {
 	return Program(C.clCreateProgramWithSource(context.clContext, C.cl_uint(count), (**C.char)(unsafe.Pointer(src)), (*C.size_t)(unsafe.Pointer(lengths)), (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateProgramWithBinary.html
-func CreateProgramWithBinary(context Context, numDevices uint32, devices *DeviceId, lengths *uint64, binaries **uint8, binaryStatus *int32, errcode *int32) Program {
+func CreateProgramWithBinary(context Context, numDevices uint32, devices *DeviceId, lengths *uint64, binaries **uint8, binaryStatus *int32, errcode *ErrorCode) Program {
 	return Program(C.clCreateProgramWithBinary(context.clContext,
 		C.cl_uint(numDevices),
 		(*C.cl_device_id)(unsafe.Pointer(devices)),
@@ -848,7 +847,7 @@ func CreateProgramWithBinary(context Context, numDevices uint32, devices *Device
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateProgramWithBuiltInKernels.html
-func CreateProgramWithBuiltInKernels(context Context, numDevices uint32, devices *DeviceId, kernelNames *uint8, errcode *int32) Program {
+func CreateProgramWithBuiltInKernels(context Context, numDevices uint32, devices *DeviceId, kernelNames *uint8, errcode *ErrorCode) Program {
 	return Program(C.clCreateProgramWithBuiltInKernels(context.clContext, C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.char)(unsafe.Pointer(kernelNames)), (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
@@ -903,7 +902,7 @@ func CompileProgram(prog Program, numDevices uint32, devices *DeviceId, options 
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clLinkProgram.html
-func LinkProgram(context Context, numDevices uint32, devices *DeviceId, options *uint8, numInputPrograms uint32, inputPrograms *Program, notify func(Program, interface{}), userData interface{}, errcode *int32) Program {
+func LinkProgram(context Context, numDevices uint32, devices *DeviceId, options *uint8, numInputPrograms uint32, inputPrograms *Program, notify func(Program, interface{}), userData interface{}, errcode *ErrorCode) Program {
 	var f *[0]byte
 	var u unsafe.Pointer
 	if notify != nil {
@@ -937,7 +936,7 @@ func GetProgramBuildInfo(prog Program, device DeviceId, paramName ProgramBuildIn
 type Kernel C.cl_kernel
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateKernel.html
-func CreateKernel(prog Program, kernelName *uint8, errcode *int32) Kernel {
+func CreateKernel(prog Program, kernelName *uint8, errcode *ErrorCode) Kernel {
 	return Kernel(C.clCreateKernel(prog, (*C.char)(unsafe.Pointer(kernelName)), (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
@@ -996,7 +995,7 @@ func GetEventInfo(e Event, paramName uint32, paramValueSize uint64, paramValue u
 }
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateUserEvent.html
-func CreateUserEvent(context Context, errcode *int32) Event {
+func CreateUserEvent(context Context, errcode *ErrorCode) Event {
 	return Event{C.clCreateUserEvent(context.clContext, (*C.cl_int)(unsafe.Pointer(errcode))), make([]*eventCbHolder, 0)}
 }
 
