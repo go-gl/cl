@@ -1157,10 +1157,12 @@ func EnqueueTask(cq CommandQueue, kernel Kernel, num_events_in_wait_list uint32,
 	return ErrorCode(C.clEnqueueTask(cq, kernel, C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
+/*
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueNativeKernel.html
 func EnqueueNativeKernel(cq CommandQueue, userfunc func(unsafe.Pointer), args unsafe.Pointer, cb_args uint64, num_mem_objects uint32, mem_list *Mem, args_mem_loc unsafe.Pointer, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) int32 {
 	panic("clEnqueueNativeKernel is not supported by this binding")
 }
+*/
 
 //see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueMarkerWithWaitList.html
 func EnqueueMarkerWithWaitList(cq CommandQueue, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
