@@ -184,3 +184,288 @@ func TestGetContextInfo(t *testing.T) {
 		}
 	}
 }
+
+//Test left to write
+func TestCreateSubDevices(t *testing.T) {
+
+}
+
+func TestCreateContextFromType(t *testing.T) {
+
+}
+
+func TestCreateCommandQueue(t *testing.T) {
+
+}
+
+func TestRetainCommandQueue(t *testing.T) {
+
+}
+
+func TestReleaseCommandQueue(t *testing.T) {
+
+}
+
+func TestGetCommandQueueInfo(t *testing.T) {
+
+}
+
+func TestCreateBuffer(t *testing.T) {
+
+}
+
+func TestCreateSubBuffer(t *testing.T) {
+
+}
+
+func TestCreateImage(t *testing.T) {
+
+}
+
+func TestRetainMemObject(t *testing.T) {
+
+}
+
+func TestReleaseMemObject(t *testing.T) {
+
+}
+
+func TestGetSupportedImageFormats(t *testing.T) {
+
+}
+
+func TestGetMemObjectInfo(t *testing.T) {
+
+}
+
+func TestGetImageInfo(t *testing.T) {
+
+}
+
+func TestSetMemObjectDestructorCallback(t *testing.T) {
+
+}
+
+func TestCreateSampler(t *testing.T) {
+
+}
+
+func TestRetainSampler(t *testing.T) {
+
+}
+
+func TestReleaseSampler(t *testing.T) {
+
+}
+
+func TestGetSamplerInfo(t *testing.T) {
+
+}
+
+func TestCreateProgramWithSource(t *testing.T) {
+
+}
+
+func TestCreateProgramWithBinary(t *testing.T) {
+
+}
+
+func TestCreateProgramWithBuiltInKernels(t *testing.T) {
+
+}
+
+func TestRetainProgram(t *testing.T) {
+
+}
+
+func TestReleaseProgram(t *testing.T) {
+
+}
+
+func TestBuildProgram(t *testing.T) {
+
+}
+
+func TestCompileProgram(t *testing.T) {
+
+}
+
+func TestLinkProgram(t *testing.T) {
+
+}
+
+func TestUnloadPlatformCompiler(t *testing.T) {
+
+}
+
+func TestGetProgramInfo(t *testing.T) {
+
+}
+
+func TestGetProgramBuildInfo(t *testing.T) {
+
+}
+
+func TestCreateKernel(t *testing.T) {
+
+}
+
+func TestCreateKernelsInProgram(t *testing.T) {
+
+}
+
+func TestRetainKernel(t *testing.T) {
+
+}
+
+func TestReleaseKernel(t *testing.T) {
+
+}
+
+func TestSetKernelArg(t *testing.T) {
+
+}
+
+func TestGetKernelInfo(t *testing.T) {
+
+}
+
+func TestGetKernelArgInfo(t *testing.T) {
+
+}
+
+func TestGetKernelWorkGroupInfo(t *testing.T) {
+
+}
+
+func TestWaitForEvents(t *testing.T) {
+
+}
+
+func TestGetEventInfo(t *testing.T) {
+
+}
+
+func TestCreateUserEvent(t *testing.T) {
+
+}
+
+func TestRetainEvent(t *testing.T) {
+
+}
+
+func TestReleaseEvent(t *testing.T) {
+
+}
+
+func TestSetUserEventStatus(t *testing.T) {
+
+}
+
+func TestSetEventCallback(t *testing.T) {
+
+}
+
+func TestGetEventProfilingInfo(t *testing.T) {
+
+}
+
+func TestFlush(t *testing.T) {
+
+}
+
+func TestFinish(t *testing.T) {
+
+}
+
+func TestEnqueueReadBuffer(t *testing.T) {
+
+}
+
+func TestEnqueueReadBufferRect(t *testing.T) {
+
+}
+
+func TestEnqueueWriteBuffer(t *testing.T) {
+
+}
+
+func TestEnqueueWriteBufferRect(t *testing.T) {
+
+}
+
+func TestEnqueueFillBuffer(t *testing.T) {
+
+}
+
+func TestEnqueueCopyBuffer(t *testing.T) {
+
+}
+
+func TestEnqueueCopyBufferRect(t *testing.T) {
+
+}
+
+func TestEnqueueReadImage(t *testing.T) {
+
+}
+
+func TestEnqueueWriteImage(t *testing.T) {
+
+}
+
+func TestEnqueueFillImage(t *testing.T) {
+
+}
+
+func TestEnqueueCopyImage(t *testing.T) {
+
+}
+
+func TestEnqueueCopyImageToBuffer(t *testing.T) {
+
+}
+
+func TestEnqueueCopyBufferToImage(t *testing.T) {
+
+}
+
+func TestEnqueueMapBuffer(t *testing.T) {
+
+}
+
+func TestEnqueueMapImage(t *testing.T) {
+
+}
+
+func TestEnqueueUnmapMemObject(t *testing.T) {
+
+}
+
+func TestEnqueueMigrateMemObjects(t *testing.T) {
+
+}
+
+func TestEnqueueNDRangeKernel(t *testing.T) {
+
+}
+
+func TestEnqueueTask(t *testing.T) {
+
+}
+
+func TestEnqueueNativeKernel(t *testing.T) {
+
+}
+
+func TestEnqueueMarkerWithWaitList(t *testing.T) {
+
+}
+
+func TestEnqueueBarrierWithWaitList(t *testing.T) {
+
+}
+
+func TestGetExtensionFunctionAddressForPlatform(t *testing.T) {
+
+}
