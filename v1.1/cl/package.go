@@ -17,6 +17,9 @@ extern void eventCallback(cl_event,cl_int,void*);
 */
 import "C"
 import (
+	"log"
+	"reflect"
+	"strings"
 	"unsafe"
 )
 
@@ -84,11 +87,6 @@ const (
 	MAP_FAILURE                                         = C.CL_MAP_FAILURE
 	MISALIGNED_SUB_BUFFER_OFFSET                        = C.CL_MISALIGNED_SUB_BUFFER_OFFSET
 	EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST           = C.CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST
-	COMPILE_PROGRAM_FAILURE                             = C.CL_COMPILE_PROGRAM_FAILURE
-	LINKER_NOT_AVAILABLE                                = C.CL_LINKER_NOT_AVAILABLE
-	LINK_PROGRAM_FAILURE                                = C.CL_LINK_PROGRAM_FAILURE
-	DEVICE_PARTITION_FAILED                             = C.CL_DEVICE_PARTITION_FAILED
-	KERNEL_ARG_INFO_NOT_AVAILABLE                       = C.CL_KERNEL_ARG_INFO_NOT_AVAILABLE
 
 	INVALID_VALUE                   = C.CL_INVALID_VALUE
 	INVALID_DEVICE_TYPE             = C.CL_INVALID_DEVICE_TYPE
@@ -125,23 +123,16 @@ const (
 	INVALID_MIP_LEVEL               = C.CL_INVALID_MIP_LEVEL
 	INVALID_GLOBAL_WORK_SIZE        = C.CL_INVALID_GLOBAL_WORK_SIZE
 	INVALID_PROPERTY                = C.CL_INVALID_PROPERTY
-	INVALID_IMAGE_DESCRIPTOR        = C.CL_INVALID_IMAGE_DESCRIPTOR
-	INVALID_COMPILER_OPTIONS        = C.CL_INVALID_COMPILER_OPTIONS
-	INVALID_LINKER_OPTIONS          = C.CL_INVALID_LINKER_OPTIONS
-	INVALID_DEVICE_PARTITION_COUNT  = C.CL_INVALID_DEVICE_PARTITION_COUNT
 )
 
 const (
 	VERSION_1_0 = C.CL_VERSION_1_0
 	VERSION_1_1 = C.CL_VERSION_1_1
-	VERSION_1_2 = C.CL_VERSION_1_2
 )
 
 const (
-	FALSE        Bool = C.CL_FALSE
-	TRUE              = C.CL_TRUE
-	BLOCKING          = C.CL_BLOCKING
-	NON_BLOCKING      = C.CL_NON_BLOCKING
+	FALSE Bool = C.CL_FALSE
+	TRUE       = C.CL_TRUE
 )
 
 const (
@@ -157,7 +148,6 @@ const (
 	DEVICE_TYPE_CPU                    = C.CL_DEVICE_TYPE_CPU
 	DEVICE_TYPE_GPU                    = C.CL_DEVICE_TYPE_GPU
 	DEVICE_TYPE_ACCELERATOR            = C.CL_DEVICE_TYPE_ACCELERATOR
-	DEVICE_TYPE_CUSTOM                 = C.CL_DEVICE_TYPE_CUSTOM
 	DEVICE_TYPE_ALL                    = C.CL_DEVICE_TYPE_ALL
 )
 
@@ -212,45 +202,29 @@ const (
 	DEVICE_VERSION                                  = C.CL_DEVICE_VERSION
 	DEVICE_EXTENSIONS                               = C.CL_DEVICE_EXTENSIONS
 	DEVICE_PLATFORM                                 = C.CL_DEVICE_PLATFORM
-	DEVICE_DOUBLE_FP_CONFIG                         = C.CL_DEVICE_DOUBLE_FP_CONFIG
 )
 
 const ( /* 0x1033 reserved for CL_DEVICE_HALF_FP_CONFIG */
-	DEVICE_PREFERRED_VECTOR_WIDTH_HALF  = C.CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF
-	DEVICE_HOST_UNIFIED_MEMORY          = C.CL_DEVICE_HOST_UNIFIED_MEMORY
-	DEVICE_NATIVE_VECTOR_WIDTH_CHAR     = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR
-	DEVICE_NATIVE_VECTOR_WIDTH_SHORT    = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT
-	DEVICE_NATIVE_VECTOR_WIDTH_INT      = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_INT
-	DEVICE_NATIVE_VECTOR_WIDTH_LONG     = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG
-	DEVICE_NATIVE_VECTOR_WIDTH_FLOAT    = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT
-	DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE   = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE
-	DEVICE_NATIVE_VECTOR_WIDTH_HALF     = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF
-	DEVICE_OPENCL_C_VERSION             = C.CL_DEVICE_OPENCL_C_VERSION
-	DEVICE_LINKER_AVAILABLE             = C.CL_DEVICE_LINKER_AVAILABLE
-	DEVICE_BUILT_IN_KERNELS             = C.CL_DEVICE_BUILT_IN_KERNELS
-	DEVICE_IMAGE_MAX_BUFFER_SIZE        = C.CL_DEVICE_IMAGE_MAX_BUFFER_SIZE
-	DEVICE_IMAGE_MAX_ARRAY_SIZE         = C.CL_DEVICE_IMAGE_MAX_ARRAY_SIZE
-	DEVICE_PARENT_DEVICE                = C.CL_DEVICE_PARENT_DEVICE
-	DEVICE_PARTITION_MAX_SUB_DEVICES    = C.CL_DEVICE_PARTITION_MAX_SUB_DEVICES
-	DEVICE_PARTITION_PROPERTIES         = C.CL_DEVICE_PARTITION_PROPERTIES
-	DEVICE_PARTITION_AFFINITY_DOMAIN    = C.CL_DEVICE_PARTITION_AFFINITY_DOMAIN
-	DEVICE_PARTITION_TYPE               = C.CL_DEVICE_PARTITION_TYPE
-	DEVICE_REFERENCE_COUNT              = C.CL_DEVICE_REFERENCE_COUNT
-	DEVICE_PREFERRED_INTEROP_USER_SYNC  = C.CL_DEVICE_PREFERRED_INTEROP_USER_SYNC
-	DEVICE_PRINTF_BUFFER_SIZE           = C.CL_DEVICE_PRINTF_BUFFER_SIZE
-	DEVICE_IMAGE_PITCH_ALIGNMENT        = C.CL_DEVICE_IMAGE_PITCH_ALIGNMENT
-	DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT = C.CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT
+	DEVICE_PREFERRED_VECTOR_WIDTH_HALF = C.CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF
+	DEVICE_HOST_UNIFIED_MEMORY         = C.CL_DEVICE_HOST_UNIFIED_MEMORY
+	DEVICE_NATIVE_VECTOR_WIDTH_CHAR    = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR
+	DEVICE_NATIVE_VECTOR_WIDTH_SHORT   = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT
+	DEVICE_NATIVE_VECTOR_WIDTH_INT     = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_INT
+	DEVICE_NATIVE_VECTOR_WIDTH_LONG    = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG
+	DEVICE_NATIVE_VECTOR_WIDTH_FLOAT   = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT
+	DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE  = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE
+	DEVICE_NATIVE_VECTOR_WIDTH_HALF    = C.CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF
+	DEVICE_OPENCL_C_VERSION            = C.CL_DEVICE_OPENCL_C_VERSION
 )
 
 const (
-	FP_DENORM                        DeviceFpConfig = C.CL_FP_DENORM
-	FP_INF_NAN                                      = C.CL_FP_INF_NAN
-	FP_ROUND_TO_NEAREST                             = C.CL_FP_ROUND_TO_NEAREST
-	FP_ROUND_TO_ZERO                                = C.CL_FP_ROUND_TO_ZERO
-	FP_ROUND_TO_INF                                 = C.CL_FP_ROUND_TO_INF
-	FP_FMA                                          = C.CL_FP_FMA
-	FP_SOFT_FLOAT                                   = C.CL_FP_SOFT_FLOAT
-	FP_CORRECTLY_ROUNDED_DIVIDE_SQRT                = C.CL_FP_CORRECTLY_ROUNDED_DIVIDE_SQRT
+	FP_DENORM           DeviceFpConfig = C.CL_FP_DENORM
+	FP_INF_NAN                         = C.CL_FP_INF_NAN
+	FP_ROUND_TO_NEAREST                = C.CL_FP_ROUND_TO_NEAREST
+	FP_ROUND_TO_ZERO                   = C.CL_FP_ROUND_TO_ZERO
+	FP_ROUND_TO_INF                    = C.CL_FP_ROUND_TO_INF
+	FP_FMA                             = C.CL_FP_FMA
+	FP_SOFT_FLOAT                      = C.CL_FP_SOFT_FLOAT
 )
 
 const (
@@ -282,24 +256,7 @@ const (
 )
 
 const (
-	CONTEXT_PLATFORM          ContextProperties = C.CL_CONTEXT_PLATFORM
-	CONTEXT_INTEROP_USER_SYNC                   = C.CL_CONTEXT_INTEROP_USER_SYNC
-)
-
-const (
-	DEVICE_PARTITION_EQUALLY            DevicePartitionProperty = C.CL_DEVICE_PARTITION_EQUALLY
-	DEVICE_PARTITION_BY_COUNTS                                  = C.CL_DEVICE_PARTITION_BY_COUNTS
-	DEVICE_PARTITION_BY_COUNTS_LIST_END                         = C.CL_DEVICE_PARTITION_BY_COUNTS_LIST_END
-	DEVICE_PARTITION_BY_AFFINITY_DOMAIN                         = C.CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN
-)
-
-const (
-	DEVICE_AFFINITY_DOMAIN_NUMA               DeviceAffinityDomain = C.CL_DEVICE_AFFINITY_DOMAIN_NUMA
-	DEVICE_AFFINITY_DOMAIN_L4_CACHE                                = C.CL_DEVICE_AFFINITY_DOMAIN_L4_CACHE
-	DEVICE_AFFINITY_DOMAIN_L3_CACHE                                = C.CL_DEVICE_AFFINITY_DOMAIN_L3_CACHE
-	DEVICE_AFFINITY_DOMAIN_L2_CACHE                                = C.CL_DEVICE_AFFINITY_DOMAIN_L2_CACHE
-	DEVICE_AFFINITY_DOMAIN_L1_CACHE                                = C.CL_DEVICE_AFFINITY_DOMAIN_L1_CACHE
-	DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE                      = C.CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE
+	CONTEXT_PLATFORM ContextProperties = C.CL_CONTEXT_PLATFORM
 )
 
 const (
@@ -316,33 +273,22 @@ const (
 	MEM_USE_HOST_PTR            = C.CL_MEM_USE_HOST_PTR
 	MEM_ALLOC_HOST_PTR          = C.CL_MEM_ALLOC_HOST_PTR
 	MEM_COPY_HOST_PTR           = C.CL_MEM_COPY_HOST_PTR
-
-	MEM_HOST_WRITE_ONLY = C.CL_MEM_HOST_WRITE_ONLY
-	MEM_HOST_READ_ONLY  = C.CL_MEM_HOST_READ_ONLY
-	MEM_HOST_NO_ACCESS  = C.CL_MEM_HOST_NO_ACCESS
 )
 
 const (
-	MIGRATE_MEM_OBJECT_HOST              MemMigrationFlags = C.CL_MIGRATE_MEM_OBJECT_HOST
-	MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED                   = C.CL_MIGRATE_MEM_OBJECT_CONTENT_UNDEFINED
-)
-
-const (
-	R             ChannelOrder = C.CL_R
-	A                          = C.CL_A
-	RG                         = C.CL_RG
-	RA                         = C.CL_RA
-	RGB                        = C.CL_RGB
-	RGBA                       = C.CL_RGBA
-	BGRA                       = C.CL_BGRA
-	ARGB                       = C.CL_ARGB
-	INTENSITY                  = C.CL_INTENSITY
-	LUMINANCE                  = C.CL_LUMINANCE
-	Rx                         = C.CL_Rx
-	RGx                        = C.CL_RGx
-	RGBx                       = C.CL_RGBx
-	DEPTH                      = C.CL_DEPTH
-	DEPTH_STENCIL              = C.CL_DEPTH_STENCIL
+	R         ChannelOrder = C.CL_R
+	A                      = C.CL_A
+	RG                     = C.CL_RG
+	RA                     = C.CL_RA
+	RGB                    = C.CL_RGB
+	RGBA                   = C.CL_RGBA
+	BGRA                   = C.CL_BGRA
+	ARGB                   = C.CL_ARGB
+	INTENSITY              = C.CL_INTENSITY
+	LUMINANCE              = C.CL_LUMINANCE
+	Rx                     = C.CL_Rx
+	RGx                    = C.CL_RGx
+	RGBx                   = C.CL_RGBx
 )
 
 const (
@@ -361,17 +307,12 @@ const (
 	UNSIGNED_INT32               = C.CL_UNSIGNED_INT32
 	HALF_FLOAT                   = C.CL_HALF_FLOAT
 	FLOAT                        = C.CL_FLOAT
-	UNORM_INT24                  = C.CL_UNORM_INT24
 )
 
 const (
-	MEM_OBJECT_BUFFER         MemObjectType = C.CL_MEM_OBJECT_BUFFER
-	MEM_OBJECT_IMAGE2D                      = C.CL_MEM_OBJECT_IMAGE2D
-	MEM_OBJECT_IMAGE3D                      = C.CL_MEM_OBJECT_IMAGE3D
-	MEM_OBJECT_IMAGE2D_ARRAY                = C.CL_MEM_OBJECT_IMAGE2D_ARRAY
-	MEM_OBJECT_IMAGE1D                      = C.CL_MEM_OBJECT_IMAGE1D
-	MEM_OBJECT_IMAGE1D_ARRAY                = C.CL_MEM_OBJECT_IMAGE1D_ARRAY
-	MEM_OBJECT_IMAGE1D_BUFFER               = C.CL_MEM_OBJECT_IMAGE1D_BUFFER
+	MEM_OBJECT_BUFFER  MemObjectType = C.CL_MEM_OBJECT_BUFFER
+	MEM_OBJECT_IMAGE2D               = C.CL_MEM_OBJECT_IMAGE2D
+	MEM_OBJECT_IMAGE3D               = C.CL_MEM_OBJECT_IMAGE3D
 )
 
 const (
@@ -387,17 +328,13 @@ const (
 )
 
 const (
-	IMAGE_FORMAT         ImageInfo = C.CL_IMAGE_FORMAT
-	IMAGE_ELEMENT_SIZE             = C.CL_IMAGE_ELEMENT_SIZE
-	IMAGE_ROW_PITCH                = C.CL_IMAGE_ROW_PITCH
-	IMAGE_SLICE_PITCH              = C.CL_IMAGE_SLICE_PITCH
-	IMAGE_WIDTH                    = C.CL_IMAGE_WIDTH
-	IMAGE_HEIGHT                   = C.CL_IMAGE_HEIGHT
-	IMAGE_DEPTH                    = C.CL_IMAGE_DEPTH
-	IMAGE_ARRAY_SIZE               = C.CL_IMAGE_ARRAY_SIZE
-	IMAGE_BUFFER                   = C.CL_IMAGE_BUFFER
-	IMAGE_NUM_MIP_LEVELS           = C.CL_IMAGE_NUM_MIP_LEVELS
-	IMAGE_NUM_SAMPLES              = C.CL_IMAGE_NUM_SAMPLES
+	IMAGE_FORMAT       ImageInfo = C.CL_IMAGE_FORMAT
+	IMAGE_ELEMENT_SIZE           = C.CL_IMAGE_ELEMENT_SIZE
+	IMAGE_ROW_PITCH              = C.CL_IMAGE_ROW_PITCH
+	IMAGE_SLICE_PITCH            = C.CL_IMAGE_SLICE_PITCH
+	IMAGE_WIDTH                  = C.CL_IMAGE_WIDTH
+	IMAGE_HEIGHT                 = C.CL_IMAGE_HEIGHT
+	IMAGE_DEPTH                  = C.CL_IMAGE_DEPTH
 )
 
 const (
@@ -422,9 +359,8 @@ const (
 )
 
 const (
-	MAP_READ                    MapFlags = C.CL_MAP_READ
-	MAP_WRITE                            = C.CL_MAP_WRITE
-	MAP_WRITE_INVALIDATE_REGION          = C.CL_MAP_WRITE_INVALIDATE_REGION
+	MAP_READ  MapFlags = C.CL_MAP_READ
+	MAP_WRITE          = C.CL_MAP_WRITE
 )
 
 const (
@@ -435,22 +371,12 @@ const (
 	PROGRAM_SOURCE                      = C.CL_PROGRAM_SOURCE
 	PROGRAM_BINARY_SIZES                = C.CL_PROGRAM_BINARY_SIZES
 	PROGRAM_BINARIES                    = C.CL_PROGRAM_BINARIES
-	PROGRAM_NUM_KERNELS                 = C.CL_PROGRAM_NUM_KERNELS
-	PROGRAM_KERNEL_NAMES                = C.CL_PROGRAM_KERNEL_NAMES
 )
 
 const (
 	PROGRAM_BUILD_STATUS  ProgramBuildInfo = C.CL_PROGRAM_BUILD_STATUS
 	PROGRAM_BUILD_OPTIONS                  = C.CL_PROGRAM_BUILD_OPTIONS
 	PROGRAM_BUILD_LOG                      = C.CL_PROGRAM_BUILD_LOG
-	PROGRAM_BINARY_TYPE                    = C.CL_PROGRAM_BINARY_TYPE
-)
-
-const (
-	PROGRAM_BINARY_TYPE_NONE            ProgramBinaryType = C.CL_PROGRAM_BINARY_TYPE_NONE
-	PROGRAM_BINARY_TYPE_COMPILED_OBJECT                   = C.CL_PROGRAM_BINARY_TYPE_COMPILED_OBJECT
-	PROGRAM_BINARY_TYPE_LIBRARY                           = C.CL_PROGRAM_BINARY_TYPE_LIBRARY
-	PROGRAM_BINARY_TYPE_EXECUTABLE                        = C.CL_PROGRAM_BINARY_TYPE_EXECUTABLE
 )
 
 const (
@@ -466,36 +392,6 @@ const (
 	KERNEL_REFERENCE_COUNT            = C.CL_KERNEL_REFERENCE_COUNT
 	KERNEL_CONTEXT                    = C.CL_KERNEL_CONTEXT
 	KERNEL_PROGRAM                    = C.CL_KERNEL_PROGRAM
-	KERNEL_ATTRIBUTES                 = C.CL_KERNEL_ATTRIBUTES
-)
-
-const (
-	KERNEL_ARG_ADDRESS_QUALIFIER KernelArgInfo = C.CL_KERNEL_ARG_ADDRESS_QUALIFIER
-	KERNEL_ARG_ACCESS_QUALIFIER                = C.CL_KERNEL_ARG_ACCESS_QUALIFIER
-	KERNEL_ARG_TYPE_NAME                       = C.CL_KERNEL_ARG_TYPE_NAME
-	KERNEL_ARG_TYPE_QUALIFIER                  = C.CL_KERNEL_ARG_TYPE_QUALIFIER
-	KERNEL_ARG_NAME                            = C.CL_KERNEL_ARG_NAME
-)
-
-const (
-	KERNEL_ARG_ADDRESS_GLOBAL   KernelArgAddressQualifier = C.CL_KERNEL_ARG_ADDRESS_GLOBAL
-	KERNEL_ARG_ADDRESS_LOCAL                              = C.CL_KERNEL_ARG_ADDRESS_LOCAL
-	KERNEL_ARG_ADDRESS_CONSTANT                           = C.CL_KERNEL_ARG_ADDRESS_CONSTANT
-	KERNEL_ARG_ADDRESS_PRIVATE                            = C.CL_KERNEL_ARG_ADDRESS_PRIVATE
-)
-
-const (
-	KERNEL_ARG_ACCESS_READ_ONLY  KernelArgAccessQualifier = C.CL_KERNEL_ARG_ACCESS_READ_ONLY
-	KERNEL_ARG_ACCESS_WRITE_ONLY                          = C.CL_KERNEL_ARG_ACCESS_WRITE_ONLY
-	KERNEL_ARG_ACCESS_READ_WRITE                          = C.CL_KERNEL_ARG_ACCESS_READ_WRITE
-	KERNEL_ARG_ACCESS_NONE                                = C.CL_KERNEL_ARG_ACCESS_NONE
-)
-
-const (
-	KERNEL_ARG_TYPE_NONE     KernelArgTypeQualifer = C.CL_KERNEL_ARG_TYPE_NONE
-	KERNEL_ARG_TYPE_CONST                          = C.CL_KERNEL_ARG_TYPE_CONST
-	KERNEL_ARG_TYPE_RESTRICT                       = C.CL_KERNEL_ARG_TYPE_RESTRICT
-	KERNEL_ARG_TYPE_VOLATILE                       = C.CL_KERNEL_ARG_TYPE_VOLATILE
 )
 
 const (
@@ -504,7 +400,6 @@ const (
 	KERNEL_LOCAL_MEM_SIZE                                         = C.CL_KERNEL_LOCAL_MEM_SIZE
 	KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE                     = C.CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE
 	KERNEL_PRIVATE_MEM_SIZE                                       = C.CL_KERNEL_PRIVATE_MEM_SIZE
-	KERNEL_GLOBAL_WORK_SIZE                                       = C.CL_KERNEL_GLOBAL_WORK_SIZE
 )
 
 const (
@@ -537,10 +432,6 @@ const (
 	COMMAND_WRITE_BUFFER_RECT                = C.CL_COMMAND_WRITE_BUFFER_RECT
 	COMMAND_COPY_BUFFER_RECT                 = C.CL_COMMAND_COPY_BUFFER_RECT
 	COMMAND_USER                             = C.CL_COMMAND_USER
-	COMMAND_BARRIER                          = C.CL_COMMAND_BARRIER
-	COMMAND_MIGRATE_MEM_OBJECTS              = C.CL_COMMAND_MIGRATE_MEM_OBJECTS
-	COMMAND_FILL_BUFFER                      = C.CL_COMMAND_FILL_BUFFER
-	COMMAND_FILL_IMAGE                       = C.CL_COMMAND_FILL_IMAGE
 )
 
 const (
@@ -567,12 +458,12 @@ const (
 
 type PlatformID C.cl_platform_id
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetPlatformIDs.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetPlatformIDs.html
 func GetPlatformIDs(numentries uint32, ids *PlatformID, numplatform *uint32) ErrorCode {
 	return ErrorCode(C.clGetPlatformIDs(C.cl_uint(numentries), (*C.cl_platform_id)(unsafe.Pointer(ids)), (*C.cl_uint)(numplatform)))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetPlatformInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetPlatformInfo.html
 func GetPlatformInfo(pid PlatformID, paramName PlatformInfo, paramValueSize uint64, data unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetPlatformInfo(pid, C.cl_platform_info(paramName), C.size_t(paramValueSize), data, (*C.size_t)(paramValueSizeRet)))
 }
@@ -583,29 +474,14 @@ func GetPlatformInfo(pid PlatformID, paramName PlatformInfo, paramValueSize uint
 
 type DeviceId C.cl_device_id
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetDeviceIDs.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetDeviceIDs.html
 func GetDeviceIDs(pid PlatformID, deviceType DeviceType, numentries uint32, devices *DeviceId, numdevices *uint32) ErrorCode {
 	return ErrorCode(C.clGetDeviceIDs(pid, C.cl_device_type(deviceType), C.cl_uint(numentries), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.cl_uint)(numdevices)))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetDeviceInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetDeviceInfo.html
 func GetDeviceInfo(did DeviceId, paramName DeviceInfo, paramValueSize uint64, data unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetDeviceInfo(did, C.cl_device_info(paramName), C.size_t(paramValueSize), data, (*C.size_t)(paramValueSizeRet)))
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateSubDevices.html
-func CreateSubDevices(did DeviceId, properties *DevicePartitionProperty, numDevices uint32, devices *DeviceId, numDevicesRet *uint32) ErrorCode {
-	return ErrorCode(C.clCreateSubDevices(did, (*C.cl_device_partition_property)(unsafe.Pointer(properties)), C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.cl_uint)(numDevicesRet)))
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clRetainDevice.html
-func RetainDevice(did DeviceId) ErrorCode {
-	return ErrorCode(C.clRetainDevice(did))
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clReleaseDevice.html
-func ReleaseDevice(did DeviceId) ErrorCode {
-	return ErrorCode(C.clReleaseDevice(did))
 }
 
 /*=================================================================================================================
@@ -626,7 +502,7 @@ func contextErrorCallback(errinfo *C.char, privateinfo unsafe.Pointer, cb C.size
 	ctx.errCallback(C.GoString(errinfo), privateinfo, uint64(cb), ctx.userdata)
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateContext.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateContext.html
 func CreateContext(properties *ContextProperties, numDevices uint32, devices *DeviceId, notify func(string, unsafe.Pointer, uint64, interface{}), userdata interface{}, errcode *ErrorCode) Context {
 	ctx := gocontext{nil, notify, userdata}
 	var f *[0]byte
@@ -639,7 +515,7 @@ func CreateContext(properties *ContextProperties, numDevices uint32, devices *De
 	return Context(&ctx)
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateContextFromType.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateContextFromType.html
 func CreateContextFromType(properties *ContextProperties, deviceType DeviceType, notify func(string, unsafe.Pointer, uint64, interface{}), userdata interface{}, errcode *ErrorCode) Context {
 	ctx := gocontext{nil, notify, userdata}
 	var f *[0]byte
@@ -652,17 +528,17 @@ func CreateContextFromType(properties *ContextProperties, deviceType DeviceType,
 	return Context(&ctx)
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clRetainContext.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clRetainContext.html
 func RetainContext(context Context) ErrorCode {
 	return ErrorCode(C.clRetainContext(context.clContext))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clReleaseContext.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clReleaseContext.html
 func ReleaseContext(context Context) ErrorCode {
 	return ErrorCode(C.clReleaseContext(context.clContext))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetContextInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetContextInfo.html
 func GetContextInfo(context Context, paramName ContextInfo, paramValueSize uint64, data unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetContextInfo(context.clContext, C.cl_context_info(paramName), C.size_t(paramValueSize), data, (*C.size_t)(paramValueSizeRet)))
 }
@@ -673,22 +549,22 @@ func GetContextInfo(context Context, paramName ContextInfo, paramValueSize uint6
 
 type CommandQueue C.cl_command_queue
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateCommandQueue.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateCommandQueue.html
 func CreateCommandQueue(context Context, did DeviceId, properties CommandQueueProperties, errcode *ErrorCode) CommandQueue {
 	return CommandQueue(C.clCreateCommandQueue(context.clContext, did, C.cl_command_queue_properties(properties), (*C.cl_int)(errcode)))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clRetainCommandQueue.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clRetainCommandQueue.html
 func RetainCommandQueue(cq CommandQueue) {
 	C.clRetainCommandQueue(cq)
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clReleaseCommandQueue.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clReleaseCommandQueue.html
 func ReleaseCommandQueue(cq CommandQueue) {
 	C.clReleaseCommandQueue(cq)
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetCommandQueueInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetCommandQueueInfo.html
 func GetCommandQueueInfo(cq CommandQueue, paramName CommandQueueInfo, paramValueSize uint64, data unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetCommandQueueInfo(cq, C.cl_command_queue_info(paramName), C.size_t(paramValueSize), data, (*C.size_t)(paramValueSizeRet)))
 }
@@ -702,7 +578,6 @@ type ImageFormat struct {
 	imageChannelDataType ChannelType
 }
 
-//see (https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/climf.html
 func (imf ImageFormat) toC() *C.cl_image_format {
 	return &C.cl_image_format{
 		image_channel_order:     C.cl_channel_order(imf.imageChannelOrder),
@@ -716,7 +591,7 @@ type ImageDesc struct {
 	buffer                                                                              Mem
 }
 
-//see (https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/climde.html
+//see (https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/climde.html
 func (imde ImageDesc) toC() *C.cl_image_desc {
 	return &C.cl_image_desc{
 		image_type:        C.cl_mem_object_type(imde.imageType),
@@ -733,32 +608,37 @@ func (imde ImageDesc) toC() *C.cl_image_desc {
 
 type Mem C.cl_mem
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateBuffer.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateBuffer.html
 func CreateBuffer(context Context, flags, paramValueSize MemFlags, hostPtr unsafe.Pointer, errcode *ErrorCode) Mem {
 	return Mem(C.clCreateBuffer(context.clContext, C.cl_mem_flags(flags), C.size_t(paramValueSize), hostPtr, (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateSubBuffer.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateSubBuffer.html
 func CreateSubBuffer(mem Mem, flags MemFlags, bufferCreateType BufferCreateType, bufferCreateInfo unsafe.Pointer, errcode *ErrorCode) Mem {
 	return Mem(C.clCreateSubBuffer(mem, C.cl_mem_flags(flags), C.cl_buffer_create_type(bufferCreateType), bufferCreateInfo, (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateImage.html
-func CreateImage(context Context, flags MemFlags, imageFormat ImageFormat, imageDesc ImageDesc, hostPtr unsafe.Pointer, errcode *ErrorCode) Mem {
-	return Mem(C.clCreateImage(context.clContext, C.cl_mem_flags(flags), imageFormat.toC(), imageDesc.toC(), hostPtr, (*C.cl_int)(unsafe.Pointer(errcode))))
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateImage2D.html
+func CreateImage2D(context Context, flags MemFlags, imageFormat ImageFormat, imageWidth, imageHeight, imageRowPitch uint64, hostptr unsafe.Pointer, errcode *ErrorCode) Mem {
+	return Mem(C.clCreateImage2D(context.clContext, C.cl_mem_flags(flags), imageFormat.toC(), C.size_t(imageWidth), C.size_t(imageHeight), C.size_t(imageRowPitch), hostptr, (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clRetainMemObject.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateImage3D.html
+func CreateImage3D(context Context, flags MemFlags, imageFormat ImageFormat, imageWidth, imageHeight, imageDepth, imageRowPitch, imageSlicePitch uint64, hostptr unsafe.Pointer, errcode *ErrorCode) Mem {
+	return Mem(C.clCreateImage3D(context.clContext, C.cl_mem_flags(flags), imageFormat.toC(), C.size_t(imageWidth), C.size_t(imageHeight), C.size_t(imageDepth), C.size_t(imageRowPitch), C.size_t(imageSlicePitch), hostptr, (*C.cl_int)(unsafe.Pointer(errcode))))
+}
+
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clRetainMemObject.html
 func RetainMemObject(mem Mem) ErrorCode {
 	return ErrorCode(C.clRetainMemObject(mem))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clReleaseMemObject.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clReleaseMemObject.html
 func ReleaseMemObject(mem Mem) ErrorCode {
 	return ErrorCode(C.clReleaseMemObject(mem))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetSupportedImageFormats.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetSupportedImageFormats.html
 func GetSupportedImageFormats(context Context, flags MemFlags, memObjectType MemObjectType, numEntries uint32, imageformats *ImageFormat, numImageFormat *uint32) ErrorCode {
 	return ErrorCode(C.clGetSupportedImageFormats(context.clContext,
 		C.cl_mem_flags(flags),
@@ -768,12 +648,12 @@ func GetSupportedImageFormats(context Context, flags MemFlags, memObjectType Mem
 		(*C.cl_uint)(numImageFormat)))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetMemObjectInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetMemObjectInfo.html
 func GetMemObjectInfo(mem Mem, paramName MemInfo, paramValueSize uint64, paramValue unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetMemObjectInfo(mem, C.cl_mem_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetImageInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetImageInfo.html
 func GetImageInfo(mem Mem, paramName ImageInfo, paramValueSize uint64, paramValue unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetImageInfo(mem, C.cl_image_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
@@ -792,7 +672,7 @@ func memObjectDestroyCallback(mem C.cl_mem, userData unsafe.Pointer) {
 	delete(mochHolder, moch)
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clSetMemObjectDestructorCallback.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clSetMemObjectDestructorCallback.html
 func SetMemObjectDestructorCallback(mem Mem, destroyCb func(Mem, interface{}), userData interface{}) ErrorCode {
 	cbh := memObjectCallbackHolder{destroyCb, userData}
 	mochHolder[&cbh] = struct{}{}
@@ -805,22 +685,22 @@ func SetMemObjectDestructorCallback(mem Mem, destroyCb func(Mem, interface{}), u
 
 type Sampler C.cl_sampler
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateSampler.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateSampler.html
 func CreateSampler(context Context, normalizedCoords Bool, addressingMode AddressingMode, filterMode FilterMode, errcode *ErrorCode) Sampler {
 	return Sampler(C.clCreateSampler(context.clContext, C.cl_bool(normalizedCoords), C.cl_addressing_mode(addressingMode), C.cl_filter_mode(filterMode), (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clRetainSampler.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clRetainSampler.html
 func RetainSampler(sampler Sampler) ErrorCode {
 	return ErrorCode(C.clRetainSampler(sampler))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clReleaseSampler.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clReleaseSampler.html
 func ReleaseSampler(sampler Sampler) ErrorCode {
 	return ErrorCode(C.clReleaseSampler(sampler))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetSamplerInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetSamplerInfo.html
 func GetSamplerInfo(sampler Sampler, paramName SamplerInfo, paramValueSize uint64, paramValue unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetSamplerInfo(sampler, C.cl_sampler_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
@@ -831,12 +711,12 @@ func GetSamplerInfo(sampler Sampler, paramName SamplerInfo, paramValueSize uint6
 
 type Program C.cl_program
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateProgramWithSource.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateProgramWithSource.html
 func CreateProgramWithSource(context Context, count uint32, src **uint8, lengths *uint64, errcode *ErrorCode) Program {
 	return Program(C.clCreateProgramWithSource(context.clContext, C.cl_uint(count), (**C.char)(unsafe.Pointer(src)), (*C.size_t)(unsafe.Pointer(lengths)), (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateProgramWithBinary.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateProgramWithBinary.html
 func CreateProgramWithBinary(context Context, numDevices uint32, devices *DeviceId, lengths *uint64, binaries **uint8, binaryStatus *int32, errcode *ErrorCode) Program {
 	return Program(C.clCreateProgramWithBinary(context.clContext,
 		C.cl_uint(numDevices),
@@ -847,17 +727,12 @@ func CreateProgramWithBinary(context Context, numDevices uint32, devices *Device
 		(*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateProgramWithBuiltInKernels.html
-func CreateProgramWithBuiltInKernels(context Context, numDevices uint32, devices *DeviceId, kernelNames *uint8, errcode *ErrorCode) Program {
-	return Program(C.clCreateProgramWithBuiltInKernels(context.clContext, C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.char)(unsafe.Pointer(kernelNames)), (*C.cl_int)(unsafe.Pointer(errcode))))
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clRetainProgram.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clRetainProgram.html
 func RetainProgram(prog Program) ErrorCode {
 	return ErrorCode(C.clRetainProgram(prog))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clReleaseProgram.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clReleaseProgram.html
 func ReleaseProgram(prog Program) ErrorCode {
 	return ErrorCode(C.clReleaseProgram(prog))
 }
@@ -876,7 +751,7 @@ func programCallback(prog C.cl_program, userdata unsafe.Pointer) {
 	delete(pochHolder, poch)
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clBuildProgram.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clBuildProgram.html
 func BuildProgram(prog Program, numDevices uint32, devices *DeviceId, options *uint8, notify func(Program, interface{}), userdata interface{}) ErrorCode {
 	var f *[0]byte
 	var u unsafe.Pointer
@@ -889,43 +764,16 @@ func BuildProgram(prog Program, numDevices uint32, devices *DeviceId, options *u
 	return ErrorCode(C.clBuildProgram(prog, C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.char)(unsafe.Pointer(options)), f, u))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clclCompileProgram.html
-func CompileProgram(prog Program, numDevices uint32, devices *DeviceId, options *uint8, numInputHeaders uint32, inputHeaders *Program, headerIncludeNames **uint8, notify func(Program, interface{}), userData interface{}) ErrorCode {
-	var f *[0]byte
-	var u unsafe.Pointer
-	if notify != nil {
-		poch := programCallbackHolder{notify, userData}
-		pochHolder[&poch] = struct{}{}
-		f = (*[0]byte)(C.programCallback)
-		u = unsafe.Pointer(&poch)
-	}
-	return ErrorCode(C.clCompileProgram(prog, C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.char)(unsafe.Pointer(options)), C.cl_uint(numInputHeaders), (*C.cl_program)(unsafe.Pointer(inputHeaders)), (**C.char)(unsafe.Pointer(headerIncludeNames)), f, u))
+func UnloadCompiler() ErrorCode {
+	return ErrorCode(C.clUnloadCompiler())
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clLinkProgram.html
-func LinkProgram(context Context, numDevices uint32, devices *DeviceId, options *uint8, numInputPrograms uint32, inputPrograms *Program, notify func(Program, interface{}), userData interface{}, errcode *ErrorCode) Program {
-	var f *[0]byte
-	var u unsafe.Pointer
-	if notify != nil {
-		poch := programCallbackHolder{notify, userData}
-		pochHolder[&poch] = struct{}{}
-		f = (*[0]byte)(C.programCallback)
-		u = unsafe.Pointer(&poch)
-	}
-	return Program(C.clLinkProgram(context.clContext, C.cl_uint(numDevices), (*C.cl_device_id)(unsafe.Pointer(devices)), (*C.char)(unsafe.Pointer(options)), C.cl_uint(numInputPrograms), (*C.cl_program)(unsafe.Pointer(inputPrograms)), f, u, (*C.cl_int)(unsafe.Pointer(errcode))))
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clUnloadPlatformCompiler.html
-func UnloadPlatformCompiler(pid PlatformID) ErrorCode {
-	return ErrorCode(C.clUnloadPlatformCompiler(pid))
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetProgramInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetProgramInfo.html
 func GetProgramInfo(prog Program, paramName ProgramInfo, paramValueSize uint64, paramValue unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetProgramInfo(prog, C.cl_program_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetProgramBuildInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetProgramBuildInfo.html
 func GetProgramBuildInfo(prog Program, device DeviceId, paramName ProgramBuildInfo, paramValueSize uint64, paramValue unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetProgramBuildInfo(prog, device, C.cl_program_build_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
@@ -936,42 +784,37 @@ func GetProgramBuildInfo(prog Program, device DeviceId, paramName ProgramBuildIn
 
 type Kernel C.cl_kernel
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateKernel.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateKernel.html
 func CreateKernel(prog Program, kernelName *uint8, errcode *ErrorCode) Kernel {
 	return Kernel(C.clCreateKernel(prog, (*C.char)(unsafe.Pointer(kernelName)), (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateKernelsInProgram.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateKernelsInProgram.html
 func CreateKernelsInProgram(prog Program, numKernels uint32, kernels *Kernel, numKernelsRet *uint32) ErrorCode {
 	return ErrorCode(C.clCreateKernelsInProgram(prog, C.cl_uint(numKernels), (*C.cl_kernel)(unsafe.Pointer(kernels)), (*C.cl_uint)(unsafe.Pointer(numKernelsRet))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clRetainKernel.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clRetainKernel.html
 func RetainKernel(ker Kernel) ErrorCode {
 	return ErrorCode(C.clRetainKernel(ker))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clReleaseKernel.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clReleaseKernel.html
 func ReleaseKernel(ker Kernel) ErrorCode {
 	return ErrorCode(C.clReleaseKernel(ker))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clSetKernelArg.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clSetKernelArg.html
 func SetKernelArg(ker Kernel, argIndex uint32, argSize uint64, argValue unsafe.Pointer) ErrorCode {
 	return ErrorCode(C.clSetKernelArg(ker, C.cl_uint(argIndex), C.size_t(argSize), argValue))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetKernelInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetKernelInfo.html
 func GetKernelInfo(ker Kernel, paramName KernelInfo, paramValueSize uint64, paramValue unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetKernelInfo(ker, C.cl_kernel_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetKernelArgInfo.html
-func GetKernelArgInfo(ker Kernel, argIndex uint32, kernelArgInfo KernelArgInfo, paramValueSize uint64, paramValue unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
-	return ErrorCode(C.clGetKernelArgInfo(ker, C.cl_uint(argIndex), C.cl_kernel_arg_info(kernelArgInfo), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetKernelWorkGroupInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetKernelWorkGroupInfo.html
 func GetKernelWorkGroupInfo(ker Kernel, did DeviceId, paramName KernelWorkGroupInfo, paramValueSize uint64, paramValue unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetKernelWorkGroupInfo(ker, did, C.cl_kernel_work_group_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
@@ -985,32 +828,32 @@ type Event struct {
 	callbacks []*eventCbHolder
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clWaitForEvents.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clWaitForEvents.html
 func WaitForEvents(numEvents uint32, events *Event) ErrorCode {
 	return ErrorCode(C.clWaitForEvents(C.cl_uint(numEvents), (*C.cl_event)(unsafe.Pointer(events))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetEventInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetEventInfo.html
 func GetEventInfo(e Event, paramName uint32, paramValueSize uint64, paramValue unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetEventInfo(e.clEvent, C.cl_event_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clCreateUserEvent.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateUserEvent.html
 func CreateUserEvent(context Context, errcode *ErrorCode) Event {
 	return Event{C.clCreateUserEvent(context.clContext, (*C.cl_int)(unsafe.Pointer(errcode))), make([]*eventCbHolder, 0)}
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clRetainEvent.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clRetainEvent.html
 func RetainEvent(e Event) ErrorCode {
 	return ErrorCode(C.clRetainEvent(e.clEvent))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clReleaseEvent.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clReleaseEvent.html
 func ReleaseEvent(e Event) ErrorCode {
 	return ErrorCode(C.clReleaseEvent(e.clEvent))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clSetUserEventStatus.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clSetUserEventStatus.html
 func SetUserEventStatus(e Event, execStatus int32) ErrorCode {
 	return ErrorCode(C.clSetUserEventStatus(e.clEvent, C.cl_int(execStatus)))
 }
@@ -1028,7 +871,7 @@ func eventCallback(event C.cl_event, eventCommandExecStatus C.cl_int, userdata u
 	ecbh.cbfunc(Event{event, nil}, CommandExecutionStatus(eventCommandExecStatus), ecbh.userData)
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clSetEventCallback.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clSetEventCallback.html
 func SetEventCallback(e Event, commandExecCallbackType int32, notify func(Event, CommandExecutionStatus, interface{}), userData interface{}) ErrorCode {
 	ecbh := eventCbHolder{notify, userData}
 	e.callbacks = append(e.callbacks, &ecbh)
@@ -1039,7 +882,7 @@ func SetEventCallback(e Event, commandExecCallbackType int32, notify func(Event,
 ======================================================Profiling Api=============================================
 =================================================================================================================*/
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetEventProfilingInfo.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetEventProfilingInfo.html
 func GetEventProfilingInfo(e Event, paramName ProfilingInfo, paramValueSize uint64, paramValue unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetEventProfilingInfo(e.clEvent, C.cl_profiling_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
@@ -1048,12 +891,12 @@ func GetEventProfilingInfo(e Event, paramName ProfilingInfo, paramValueSize uint
 ====================================================Flush and Finish Api===========================================
 =================================================================================================================*/
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clFlush.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clFlush.html
 func Flush(cq CommandQueue) ErrorCode {
 	return ErrorCode(C.clFlush(cq))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clFinish.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clFinish.html
 func Finish(cq CommandQueue) ErrorCode {
 	return ErrorCode(C.clFinish(cq))
 }
@@ -1062,167 +905,119 @@ func Finish(cq CommandQueue) ErrorCode {
 =========================================================Enqueue Api===============================================
 =================================================================================================================*/
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueReadBuffer.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueReadBuffer.html
 func EnqueueReadBuffer(cq CommandQueue, buffer Mem, blocking_read Bool, offset uint64, size uint64, ptr unsafe.Pointer, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueReadBuffer(cq, buffer, C.cl_bool(blocking_read), C.size_t(offset), C.size_t(size), unsafe.Pointer(ptr), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueReadBufferRect.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueReadBufferRect.html
 func EnqueueReadBufferRect(cq CommandQueue, buffer Mem, blocking_read Bool, buffer_offset *uint64, host_offset *uint64, region *uint64, buffer_row_pitch uint64, buffer_slice_pitch uint64, host_row_pitch uint64, host_slice_pitch uint64, ptr unsafe.Pointer, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueReadBufferRect(cq, buffer, C.cl_bool(blocking_read), (*C.size_t)(unsafe.Pointer(buffer_offset)), (*C.size_t)(unsafe.Pointer(host_offset)), (*C.size_t)(unsafe.Pointer(region)), C.size_t(buffer_row_pitch), C.size_t(buffer_slice_pitch), C.size_t(host_row_pitch), C.size_t(host_slice_pitch), unsafe.Pointer(ptr), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueWriteBuffer.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueWriteBuffer.html
 func EnqueueWriteBuffer(cq CommandQueue, buffer Mem, blocking_write Bool, offset uint64, size uint64, ptr unsafe.Pointer, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueWriteBuffer(cq, buffer, C.cl_bool(blocking_write), C.size_t(offset), C.size_t(size), unsafe.Pointer(ptr), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueWriteBufferRect.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueWriteBufferRect.html
 func EnqueueWriteBufferRect(cq CommandQueue, buffer Mem, blocking_write Bool, buffer_offset *uint64, host_offset *uint64, region *uint64, buffer_row_pitch uint64, buffer_slice_pitch uint64, host_row_pitch uint64, host_slice_pitch uint64, ptr unsafe.Pointer, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueWriteBufferRect(cq, buffer, C.cl_bool(blocking_write), (*C.size_t)(unsafe.Pointer(buffer_offset)), (*C.size_t)(unsafe.Pointer(host_offset)), (*C.size_t)(unsafe.Pointer(region)), C.size_t(buffer_row_pitch), C.size_t(buffer_slice_pitch), C.size_t(host_row_pitch), C.size_t(host_slice_pitch), unsafe.Pointer(ptr), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueFillBuffer.html
-func EnqueueFillBuffer(cq CommandQueue, buffer Mem, pattern unsafe.Pointer, pattern_size uint64, offset uint64, size uint64, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
-	return ErrorCode(C.clEnqueueFillBuffer(cq, buffer, unsafe.Pointer(pattern), C.size_t(pattern_size), C.size_t(offset), C.size_t(size), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueCopyBuffer.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueCopyBuffer.html
 func EnqueueCopyBuffer(cq CommandQueue, src_buffer Mem, dst_buffer Mem, src_offset uint64, dst_offset uint64, size uint64, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueCopyBuffer(cq, src_buffer, dst_buffer, C.size_t(src_offset), C.size_t(dst_offset), C.size_t(size), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueCopyBufferRect.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueCopyBufferRect.html
 func EnqueueCopyBufferRect(cq CommandQueue, src_buffer Mem, dst_buffer Mem, src_origin *uint64, dst_origin *uint64, region *uint64, src_row_pitch uint64, src_slice_pitch uint64, dst_row_pitch uint64, dst_slice_pitch uint64, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueCopyBufferRect(cq, src_buffer, dst_buffer, (*C.size_t)(unsafe.Pointer(src_origin)), (*C.size_t)(unsafe.Pointer(dst_origin)), (*C.size_t)(unsafe.Pointer(region)), C.size_t(src_row_pitch), C.size_t(src_slice_pitch), C.size_t(dst_row_pitch), C.size_t(dst_slice_pitch), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueReadImage.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueReadImage.html
 func EnqueueReadImage(cq CommandQueue, image Mem, blocking_read Bool, origin3 *uint64, region3 *uint64, row_pitch uint64, slice_pitch uint64, ptr unsafe.Pointer, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueReadImage(cq, image, C.cl_bool(blocking_read), (*C.size_t)(unsafe.Pointer(origin3)), (*C.size_t)(unsafe.Pointer(region3)), C.size_t(row_pitch), C.size_t(slice_pitch), unsafe.Pointer(ptr), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueWriteImage.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueWriteImage.html
 func EnqueueWriteImage(cq CommandQueue, image Mem, blocking_write Bool, origin3 *uint64, region3 *uint64, input_row_pitch uint64, input_slice_pitch uint64, ptr unsafe.Pointer, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueWriteImage(cq, image, C.cl_bool(blocking_write), (*C.size_t)(unsafe.Pointer(origin3)), (*C.size_t)(unsafe.Pointer(region3)), C.size_t(input_row_pitch), C.size_t(input_slice_pitch), unsafe.Pointer(ptr), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueFillImage.html
-func EnqueueFillImage(cq CommandQueue, image Mem, fill_color unsafe.Pointer, origin3 *uint64, region3 *uint64, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
-	return ErrorCode(C.clEnqueueFillImage(cq, image, unsafe.Pointer(fill_color), (*C.size_t)(unsafe.Pointer(origin3)), (*C.size_t)(unsafe.Pointer(region3)), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueCopyImage.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueCopyImage.html
 func EnqueueCopyImage(cq CommandQueue, src_image Mem, dst_image Mem, src_origin3 *uint64, dst_origin3 *uint64, region3 *uint64, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueCopyImage(cq, src_image, dst_image, (*C.size_t)(unsafe.Pointer(src_origin3)), (*C.size_t)(unsafe.Pointer(dst_origin3)), (*C.size_t)(unsafe.Pointer(region3)), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueCopyImageToBuffer.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueCopyImageToBuffer.html
 func EnqueueCopyImageToBuffer(cq CommandQueue, src_image Mem, dst_buffer Mem, src_origin3 *uint64, region3 *uint64, dst_offset uint64, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueCopyImageToBuffer(cq, src_image, dst_buffer, (*C.size_t)(unsafe.Pointer(src_origin3)), (*C.size_t)(unsafe.Pointer(region3)), C.size_t(dst_offset), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueCopyBufferToImage.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueCopyBufferToImage.html
 func EnqueueCopyBufferToImage(cq CommandQueue, src_buffer Mem, dst_image Mem, src_offset uint64, dst_origin3 *uint64, region3 *uint64, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueCopyBufferToImage(cq, src_buffer, dst_image, C.size_t(src_offset), (*C.size_t)(unsafe.Pointer(dst_origin3)), (*C.size_t)(unsafe.Pointer(region3)), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueMapBuffer.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueMapBuffer.html
 func EnqueueMapBuffer(cq CommandQueue, buffer Mem, blocking_map Bool, map_flags uint64, offset uint64, size uint64, num_events_in_wait_list uint32, event_wait_list *Event, event *Event, errcode_ret *int32) unsafe.Pointer {
 	return unsafe.Pointer(C.clEnqueueMapBuffer(cq, buffer, C.cl_bool(blocking_map), C.cl_map_flags(map_flags), C.size_t(offset), C.size_t(size), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event)), (*C.cl_int)(unsafe.Pointer(errcode_ret))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueMapImage.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueMapImage.html
 func EnqueueMapImage(cq CommandQueue, image Mem, blocking_map Bool, map_flags MapFlags, origin3 *uint64, region3 *uint64, image_row_pitch *uint64, image_slice_pitch *uint64, num_events_in_wait_list uint32, event_wait_list *Event, event *Event, errcode_ret *int32) unsafe.Pointer {
 	return unsafe.Pointer(C.clEnqueueMapImage(cq, image, C.cl_bool(blocking_map), C.cl_map_flags(map_flags), (*C.size_t)(unsafe.Pointer(origin3)), (*C.size_t)(unsafe.Pointer(region3)), (*C.size_t)(unsafe.Pointer(image_row_pitch)), (*C.size_t)(unsafe.Pointer(image_slice_pitch)), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event)), (*C.cl_int)(unsafe.Pointer(errcode_ret))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueUnmapMemObject.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueUnmapMemObject.html
 func EnqueueUnmapMemObject(cq CommandQueue, memobj Mem, mapped_ptr unsafe.Pointer, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueUnmapMemObject(cq, memobj, unsafe.Pointer(mapped_ptr), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueMigrateMemObjects.html
-func EnqueueMigrateMemObjects(cq CommandQueue, num_mem_objects uint32, mem_objects *Mem, flags MemMigrationFlags, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
-	return ErrorCode(C.clEnqueueMigrateMemObjects(cq, C.cl_uint(num_mem_objects), (*C.cl_mem)(unsafe.Pointer(mem_objects)), C.cl_mem_migration_flags(flags), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
-}
-
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueNDRangeKernel.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueNDRangeKernel.html
 func EnqueueNDRangeKernel(cq CommandQueue, kernel Kernel, work_dim uint32, global_work_offset *uint64, global_work_size *uint64, local_work_size *uint64, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueNDRangeKernel(cq, kernel, C.cl_uint(work_dim), (*C.size_t)(unsafe.Pointer(global_work_offset)), (*C.size_t)(unsafe.Pointer(global_work_size)), (*C.size_t)(unsafe.Pointer(local_work_size)), C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueTask.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueTask.html
 func EnqueueTask(cq CommandQueue, kernel Kernel, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
 	return ErrorCode(C.clEnqueueTask(cq, kernel, C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
 /*
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueNativeKernel.html
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueNativeKernel.html
 func EnqueueNativeKernel(cq CommandQueue, userfunc func(unsafe.Pointer), args unsafe.Pointer, cb_args uint64, num_mem_objects uint32, mem_list *Mem, args_mem_loc unsafe.Pointer, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) int32 {
-	panic("clEnqueueNativeKernel is not supported by this binding")
-}
-*/
+	C.clEnqueueNativeKernel(cp)
+}*/
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueMarkerWithWaitList.html
-func EnqueueMarkerWithWaitList(cq CommandQueue, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
-	return ErrorCode(C.clEnqueueMarkerWithWaitList(cq, C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueMarker.html
+func EnqueueMarker(cq CommandQueue, event *Event) ErrorCode {
+	return ErrorCode(C.clEnqueueMarker(cq, (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueBarrierWithWaitList.html
-func EnqueueBarrierWithWaitList(cq CommandQueue, num_events_in_wait_list uint32, event_wait_list *Event, event *Event) ErrorCode {
-	return ErrorCode(C.clEnqueueBarrierWithWaitList(cq, C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueWaitForEvents.html
+func EnqueueWaitForEvents(cq CommandQueue, num_events uint32, event_list *Event) ErrorCode {
+	return ErrorCode(C.clEnqueueWaitForEvents(cq, C.cl_uint(num_events), (*C.cl_event)(unsafe.Pointer(event_list))))
+}
+
+//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueBarrier.html
+func EnqueueBarrier(cq CommandQueue) ErrorCode {
+	return ErrorCode(C.clEnqueueBarrier(cq))
 }
 
 /*=================================================================================================================
 ===================================================Extension functions Api=========================================
 =================================================================================================================*/
 
-//see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetExtensionFunctionAddressForPlatform.html
-func GetExtensionFunctionAddressForPlatform(platform PlatformID, func_name *int8) unsafe.Pointer {
-	return unsafe.Pointer(C.clGetExtensionFunctionAddressForPlatform(platform, (*C.char)(func_name)))
+func GetExtensionFunctionAddress(funcName string) unsafe.Pointer {
+	return unsafe.Pointer(C.clGetExtensionFunctionAddress((*C.char)(unsafe.Pointer(str(funcName)))))
 }
 
-/*
-//Deprecated OpenCL 1.1 APIs
-//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateImage2D.html
-func CreateImage2D(context Context, flags uint32, image_format *ImageFormat, image_width uint64, image_height uint64, image_row_pitch uint64, host_ptr unsafe.Pointer, errcode_ret *int32) Mem {
-	return Mem(C.clCreateImage2D(context.clContext, C.cl_mem_flags(flags), (*C.cl_image_format)(image_format.toC()), C.size_t(image_width), C.size_t(image_height), C.size_t(image_row_pitch), host_ptr, (*C.cl_int)(errcode_ret)))
+func str(str string) *uint8 {
+	if !strings.HasSuffix(str, "\x00") {
+		log.Fatal("str argument missing null terminator", str)
+	}
+	header := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	return (*uint8)(unsafe.Pointer(header.Data))
 }
-
-//Deprecated OpenCL 1.1 APIs
-//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateImage3D.html
-func CreateImage3D(context Context, flags uint32, image_format *ImageFormat, image_width uint64, image_height uint64, image_depth uint64, image_row_pitch uint64, image_slice_pitch uint64, host_ptr unsafe.Pointer, errcode_ret *int32) Mem {
-	return Mem(C.clCreateImage3D(context.clContext, C.cl_mem_flags(flags), (*C.cl_image_format)(image_format.toC()), C.size_t(image_width), C.size_t(image_height), C.size_t(image_depth), C.size_t(image_row_pitch), C.size_t(image_slice_pitch), host_ptr, (*C.cl_int)(errcode_ret)))
-}
-
-//Deprecated OpenCL 1.1 APIs
-//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueMarker.html
-func EnqueueMarker(cq CommandQueue, event *Event) ErrorCode {
-	return ErrorCode(C.clEnqueueMarker(cq, (*C.cl_event)(unsafe.Pointer(event))))
-}
-
-//Deprecated OpenCL 1.1 APIs
-//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueWaitForEvents.html
-func EnqueueWaitForEvents(cq CommandQueue, num_events uint32, event_list *Event) ErrorCode {
-	return ErrorCode(C.clEnqueueWaitForEvents(cq, C.cl_uint(num_events), (*C.cl_event)(unsafe.Pointer(event_list))))
-}
-
-//Deprecated OpenCL 1.1 APIs
-//see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clEnqueueBarrier.html
-func EnqueueBarrier(cq CommandQueue) ErrorCode {
-	return ErrorCode(C.clEnqueueBarrier(cq))
-}
-
-//Deprecated OpenCL 1.1 APIs
-// see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clUnloadCompiler.html
-func UnloadCompiler() ErrorCode {
-	return ErrorCode(C.clUnloadCompiler())
-}
-
-//Deprecated OpenCL 1.1 APIs
-// see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/.html
-func GetExtensionFunctionAddress(func_name *int8) unsafe.Pointer {
-	return unsafe.Pointer(C.clGetExtensionFunctionAddress((*C.char)(func_name)))
-}
-*/
