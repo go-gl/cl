@@ -69,6 +69,8 @@ var errormap = map[ErrorCode]string{
 	INVALID_DEVICE_PARTITION_COUNT:            "INVALID_DEVICE_PARTITION_COUNT",
 }
 
+// Str returns a pointer o the first byte of the string, use this to pass
+// strings to CL devices.
 func Str(str string) *uint8 {
 	if !strings.HasSuffix(str, "\x00") {
 		log.Fatal("str argument missing null terminator", str)
@@ -77,6 +79,7 @@ func Str(str string) *uint8 {
 	return (*uint8)(unsafe.Pointer(header.Data))
 }
 
+// ErrToStr returns a string that represents this error code.
 func ErrToStr(e ErrorCode) string {
 	return errormap[e]
 }

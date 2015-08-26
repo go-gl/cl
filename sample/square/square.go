@@ -9,10 +9,12 @@ import (
 )
 
 const (
-	DATA_SIZE = 1024
+	// DataSize is the size of the data we're going to pass to the CL device.
+	DataSize = 1024
 )
 
-var KernelSource string = `
+// KernelSource is the source code of the program we're going to run.
+var KernelSource = `
 __kernel void square(
    __global float* input,
    __global float* output,
@@ -25,7 +27,7 @@ __kernel void square(
 
 func main() {
 
-	data := make([]float32, DATA_SIZE)
+	data := make([]float32, DataSize)
 	for x := 0; x < len(data); x++ {
 		data[x] = rand.Float32()*99 + 1
 	}
@@ -36,7 +38,7 @@ func main() {
 	if err != cl.SUCCESS {
 		log.Fatal("Failed to create device group")
 	}
-	var errptr *int32
+	var errptr *cl.ErrorCode
 
 	//Create Computer Context
 	context := cl.CreateContext(nil, 1, &device, nil, nil, errptr)
@@ -63,7 +65,7 @@ func main() {
 	err = cl.BuildProgram(program, 1, &device, nil, nil, nil)
 	if err != cl.SUCCESS {
 		var length uint64
-		buffer := make([]byte, DATA_SIZE)
+		buffer := make([]byte, DataSize)
 
 		log.Println("Error: Failed to build program executable!")
 		cl.GetProgramBuildInfo(program, device, cl.PROGRAM_BUILD_LOG, uint64(len(buffer)), unsafe.Pointer(&buffer[0]), &length)
@@ -78,26 +80,26 @@ func main() {
 	defer cl.ReleaseKernel(kernel)
 
 	//Create buffers
-	input := cl.CreateBuffer(context, cl.MEM_READ_ONLY, 4*DATA_SIZE, nil, errptr)
+	input := cl.CreateBuffer(context, cl.MEM_READ_ONLY, 4*DataSize, nil, errptr)
 	if errptr != nil && cl.ErrorCode(*errptr) != cl.SUCCESS {
 		log.Fatal("couldnt create input buffer")
 	}
 	defer cl.ReleaseMemObject(input)
 
-	output := cl.CreateBuffer(context, cl.MEM_WRITE_ONLY, 4*DATA_SIZE, nil, errptr)
+	output := cl.CreateBuffer(context, cl.MEM_WRITE_ONLY, 4*DataSize, nil, errptr)
 	if errptr != nil && cl.ErrorCode(*errptr) != cl.SUCCESS {
 		log.Fatal("couldnt create output buffer")
 	}
 	defer cl.ReleaseMemObject(output)
 
 	//Write data
-	err = cl.EnqueueWriteBuffer(cq, input, cl.TRUE, 0, 4*DATA_SIZE, unsafe.Pointer(&data[0]), 0, nil, nil)
+	err = cl.EnqueueWriteBuffer(cq, input, cl.TRUE, 0, 4*DataSize, unsafe.Pointer(&data[0]), 0, nil, nil)
 	if err != cl.SUCCESS {
 		log.Fatal("Failed to write to source array")
 	}
 
 	//Set kernel args
-	count := uint32(DATA_SIZE)
+	count := uint32(DataSize)
 	err = cl.SetKernelArg(kernel, 0, 8, unsafe.Pointer(&input))
 	if err != cl.SUCCESS {
 		log.Fatal("Failed to write kernel arg 0")
@@ -125,7 +127,7 @@ func main() {
 
 	cl.Finish(cq)
 
-	results := make([]float32, DATA_SIZE)
+	results := make([]float32, DataSize)
 	err = cl.EnqueueReadBuffer(cq, output, cl.TRUE, 0, 4*1024, unsafe.Pointer(&results[0]), 0, nil, nil)
 	if err != cl.SUCCESS {
 		log.Fatal("Failed to read buffer!")
@@ -143,6 +145,6 @@ func main() {
 		log.Printf("I/O: %f\t%f", x, results[i])
 	}
 
-	log.Printf("%d/%d success", success, DATA_SIZE)
+	log.Printf("%d/%d success", success, DataSize)
 	log.Printf("values not zero: %d", notzero)
 }
