@@ -561,7 +561,7 @@ const (
 	PROFILING_COMMAND_END    ProfilingInfo = C.CL_PROFILING_COMMAND_END
 )
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Platform Api
 
 type PlatformID C.cl_platform_id
@@ -576,7 +576,7 @@ func GetPlatformInfo(pid PlatformID, paramName PlatformInfo, paramValueSize uint
 	return ErrorCode(C.clGetPlatformInfo(pid, C.cl_platform_info(paramName), C.size_t(paramValueSize), data, (*C.size_t)(paramValueSizeRet)))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Device Api
 
 type DeviceId C.cl_device_id
@@ -606,7 +606,7 @@ func ReleaseDevice(did DeviceId) ErrorCode {
 	return ErrorCode(C.clReleaseDevice(did))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Context Api
 
 type gocontext struct {
@@ -664,7 +664,7 @@ func GetContextInfo(context Context, paramName ContextInfo, paramValueSize uint6
 	return ErrorCode(C.clGetContextInfo(context.clContext, C.cl_context_info(paramName), C.size_t(paramValueSize), data, (*C.size_t)(paramValueSizeRet)))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Command queue Api
 
 type CommandQueue C.cl_command_queue
@@ -689,7 +689,7 @@ func GetCommandQueueInfo(cq CommandQueue, paramName CommandQueueInfo, paramValue
 	return ErrorCode(C.clGetCommandQueueInfo(cq, C.cl_command_queue_info(paramName), C.size_t(paramValueSize), data, (*C.size_t)(paramValueSizeRet)))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Memory Object Api
 
 type ImageFormat struct {
@@ -794,7 +794,7 @@ func SetMemObjectDestructorCallback(mem Mem, destroyCb func(Mem, interface{}), u
 	return ErrorCode(C.clSetMemObjectDestructorCallback(mem, (*[0]byte)(C.memObjectDestroyCallback), unsafe.Pointer(&cbh)))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Sampler Api
 
 type Sampler C.cl_sampler
@@ -819,7 +819,7 @@ func GetSamplerInfo(sampler Sampler, paramName SamplerInfo, paramValueSize uint6
 	return ErrorCode(C.clGetSamplerInfo(sampler, C.cl_sampler_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Program Object Api
 
 type Program C.cl_program
@@ -923,7 +923,7 @@ func GetProgramBuildInfo(prog Program, device DeviceId, paramName ProgramBuildIn
 	return ErrorCode(C.clGetProgramBuildInfo(prog, device, C.cl_program_build_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Kernel Object Api
 
 type Kernel C.cl_kernel
@@ -968,7 +968,7 @@ func GetKernelWorkGroupInfo(ker Kernel, did DeviceId, paramName KernelWorkGroupI
 	return ErrorCode(C.clGetKernelWorkGroupInfo(ker, did, C.cl_kernel_work_group_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Event Object Api
 
 type Event struct {
@@ -1026,7 +1026,7 @@ func SetEventCallback(e Event, commandExecCallbackType int32, notify func(Event,
 	return ErrorCode(C.clSetEventCallback(e.clEvent, C.cl_int(commandExecCallbackType), (*[0]byte)(C.eventCallback), unsafe.Pointer(&ecbh)))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Profiling Api
 
 // see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetEventProfilingInfo.html
@@ -1034,7 +1034,7 @@ func GetEventProfilingInfo(e Event, paramName ProfilingInfo, paramValueSize uint
 	return ErrorCode(C.clGetEventProfilingInfo(e.clEvent, C.cl_profiling_info(paramName), C.size_t(paramValueSize), paramValue, (*C.size_t)(paramValueSizeRet)))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Flush and Finish Api
 
 // see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clFlush.html
@@ -1047,7 +1047,7 @@ func Finish(cq CommandQueue) ErrorCode {
 	return ErrorCode(C.clFinish(cq))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Enqueue Api
 
 // see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clEnqueueReadBuffer.html
@@ -1162,7 +1162,7 @@ func EnqueueBarrierWithWaitList(cq CommandQueue, num_events_in_wait_list uint32,
 	return ErrorCode(C.clEnqueueBarrierWithWaitList(cq, C.cl_uint(num_events_in_wait_list), (*C.cl_event)(unsafe.Pointer(event_wait_list)), (*C.cl_event)(unsafe.Pointer(event))))
 }
 
-//------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Extension functions Api
 
 // see https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/clGetExtensionFunctionAddressForPlatform.html
