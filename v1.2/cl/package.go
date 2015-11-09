@@ -693,37 +693,37 @@ func GetCommandQueueInfo(cq CommandQueue, paramName CommandQueueInfo, paramValue
 // Memory Object Api
 
 type ImageFormat struct {
-	imageChannelOrder    ChannelOrder
-	imageChannelDataType ChannelType
+	ImageChannelOrder    ChannelOrder
+	ImageChannelDataType ChannelType
 }
 
 // see (https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/climf.html
 func (imf ImageFormat) toC() *C.cl_image_format {
 	return &C.cl_image_format{
-		image_channel_order:     C.cl_channel_order(imf.imageChannelOrder),
-		image_channel_data_type: C.cl_channel_type(imf.imageChannelDataType)}
+		image_channel_order:     C.cl_channel_order(imf.ImageChannelOrder),
+		image_channel_data_type: C.cl_channel_type(imf.ImageChannelDataType)}
 }
 
 type ImageDesc struct {
-	imageType                                                                           MemObjectType
-	numMipLevels, numSamples                                                            uint32
-	imageWidth, imageHeight, imageDepth, imageArraySize, imageRowPitch, imageSlicePitch uint64
-	buffer                                                                              Mem
+	ImageType                                                                           MemObjectType
+	NumMipLevels, NumSamples                                                            uint32
+	ImageWidth, ImageHeight, ImageDepth, ImageArraySize, ImageRowPitch, ImageSlicePitch uint64
+	Buffer                                                                              Mem
 }
 
 // see (https://www.khronos.org/registry/cl/sdk/1.2/docs/man/xhtml/climde.html
 func (imde ImageDesc) toC() *C.cl_image_desc {
 	return &C.cl_image_desc{
-		image_type:        C.cl_mem_object_type(imde.imageType),
-		image_width:       C.size_t(imde.imageWidth),
-		image_height:      C.size_t(imde.imageHeight),
-		image_depth:       C.size_t(imde.imageDepth),
-		image_array_size:  C.size_t(imde.imageArraySize),
-		image_row_pitch:   C.size_t(imde.imageRowPitch),
-		image_slice_pitch: C.size_t(imde.imageSlicePitch),
-		num_mip_levels:    C.cl_uint(imde.numMipLevels),
-		num_samples:       C.cl_uint(imde.numSamples),
-		buffer:            C.cl_mem(imde.buffer)}
+		image_type:        C.cl_mem_object_type(imde.ImageType),
+		image_width:       C.size_t(imde.ImageWidth),
+		image_height:      C.size_t(imde.ImageHeight),
+		image_depth:       C.size_t(imde.ImageDepth),
+		image_array_size:  C.size_t(imde.ImageArraySize),
+		image_row_pitch:   C.size_t(imde.ImageRowPitch),
+		image_slice_pitch: C.size_t(imde.ImageSlicePitch),
+		num_mip_levels:    C.cl_uint(imde.NumMipLevels),
+		num_samples:       C.cl_uint(imde.NumSamples),
+		buffer:            C.cl_mem(imde.Buffer)}
 }
 
 type Mem C.cl_mem
