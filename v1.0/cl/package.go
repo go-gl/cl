@@ -572,7 +572,7 @@ func (imde ImageDesc) toC() *C.cl_image_desc {
 type Mem C.cl_mem
 
 // see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateBuffer.html
-func CreateBuffer(context Context, flags, paramValueSize MemFlags, hostPtr unsafe.Pointer, errcode *ErrorCode) Mem {
+func CreateBuffer(context Context, flags MemFlags, paramValueSize uint64, hostPtr unsafe.Pointer, errcode *ErrorCode) Mem {
 	return Mem(C.clCreateBuffer(context.clContext, C.cl_mem_flags(flags), C.size_t(paramValueSize), hostPtr, (*C.cl_int)(unsafe.Pointer(errcode))))
 }
 
