@@ -1,7 +1,6 @@
 package cl
 
 import (
-	"log"
 	"reflect"
 	"strings"
 	"unsafe"
