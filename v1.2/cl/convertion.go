@@ -74,11 +74,12 @@ var errormap = map[ErrorCode]string{
 	INVALID_DEVICE_PARTITION_COUNT:            "INVALID_DEVICE_PARTITION_COUNT",
 }
 
-// Str returns a pointer o the first byte of the string, use this to pass
-// strings to CL devices.
+// Str takes a null-terminated Go string and returns its GL-compatible address.
+// This function reaches into Go string storage in an unsafe way so the caller
+// must ensure the string is not garbage collected.
 func Str(str string) *uint8 {
 	if !strings.HasSuffix(str, "\x00") {
-		log.Fatal("str argument missing null terminator", str)
+		panic("str argument missing null terminator: " + str)
 	}
 	header := (*reflect.StringHeader)(unsafe.Pointer(&str))
 	return (*uint8)(unsafe.Pointer(header.Data))
