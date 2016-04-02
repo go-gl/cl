@@ -22,9 +22,7 @@ import (
 )
 
 func init() {
-	mochHolder = make(map[*memObjectCallbackHolder]struct{})
 	pochHolder = make(map[*programCallbackHolder]struct{})
-	ecbHolder = make(map[*eventCbHolder]struct{})
 }
 
 type ErrorCode int32
@@ -526,11 +524,6 @@ func ReleaseCommandQueue(cq CommandQueue) {
 // see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetCommandQueueInfo.html
 func GetCommandQueueInfo(cq CommandQueue, paramName CommandQueueInfo, paramValueSize uint64, data unsafe.Pointer, paramValueSizeRet *uint64) ErrorCode {
 	return ErrorCode(C.clGetCommandQueueInfo(cq, C.cl_command_queue_info(paramName), C.size_t(paramValueSize), data, (*C.size_t)(paramValueSizeRet)))
-}
-
-// see https://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clSetCommandQueueProperty.html
-func SetCommandQueueProperty(cq CommandQueue, properties CommandQueueProperties, enable BOOL, oldproperties *CommandQueueProperties) int {
-	return ErrorCode(C.clSetCommandQueueProperty(cq, C.cl_command_queue_properties(properties), C.cl_bool(enable), (*C.cl_command_queue_properties)(oldproperties)))
 }
 
 // -----------------------------------------------------------------------------

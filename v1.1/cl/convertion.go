@@ -27,11 +27,6 @@ var errormap = map[ErrorCode]string{
 	MAP_FAILURE:                               "MAP_FAILURE",
 	MISALIGNED_SUB_BUFFER_OFFSET:              "MISALIGNED_SUB_BUFFER_OFFSET",
 	EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST: "EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST",
-	COMPILE_PROGRAM_FAILURE:                   "COMPILE_PROGRAM_FAILURE",
-	LINKER_NOT_AVAILABLE:                      "LINKER_NOT_AVAILABLE",
-	LINK_PROGRAM_FAILURE:                      "LINK_PROGRAM_FAILURE",
-	DEVICE_PARTITION_FAILED:                   "DEVICE_PARTITION_FAILED",
-	KERNEL_ARG_INFO_NOT_AVAILABLE:             "KERNEL_ARG_INFO_NOT_AVAILABLE",
 	INVALID_VALUE:                             "INVALID_VALUE",
 	INVALID_DEVICE_TYPE:                       "INVALID_DEVICE_TYPE",
 	INVALID_PLATFORM:                          "INVALID_PLATFORM",
@@ -67,10 +62,6 @@ var errormap = map[ErrorCode]string{
 	INVALID_MIP_LEVEL:                         "INVALID_MIP_LEVEL",
 	INVALID_GLOBAL_WORK_SIZE:                  "INVALID_GLOBAL_WORK_SIZE",
 	INVALID_PROPERTY:                          "INVALID_PROPERTY",
-	INVALID_IMAGE_DESCRIPTOR:                  "INVALID_IMAGE_DESCRIPTOR",
-	INVALID_COMPILER_OPTIONS:                  "INVALID_COMPILER_OPTIONS",
-	INVALID_LINKER_OPTIONS:                    "INVALID_LINKER_OPTIONS",
-	INVALID_DEVICE_PARTITION_COUNT:            "INVALID_DEVICE_PARTITION_COUNT",
 }
 
 // Str takes a null-terminated Go string and returns its GL-compatible address.
